@@ -28,6 +28,12 @@ describe("App", () => {
     expect(screen.getByText("Baseplate Configuration")).toBeInTheDocument();
   });
 
+  it("renders the layout planner", () => {
+    render(<App />);
+    expect(screen.getByText("Layout Planner")).toBeInTheDocument();
+    expect(screen.getByTestId("layout-grid")).toBeInTheDocument();
+  });
+
   it("renders the preview mode toggle", () => {
     render(<App />);
     expect(
