@@ -39,6 +39,11 @@ describe("App", () => {
     expect(screen.getByText("Print Planner")).toBeInTheDocument();
   });
 
+  it("renders the export panel", () => {
+    render(<App />);
+    expect(screen.getByText("Export")).toBeInTheDocument();
+  });
+
   it("renders the preview mode toggle", () => {
     render(<App />);
     expect(
