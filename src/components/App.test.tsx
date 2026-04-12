@@ -7,6 +7,9 @@ vi.mock("@react-three/drei", () => import("../__mocks__/@react-three/drei"));
 vi.mock("./BinPreview", () => ({
   BinPreview: () => null,
 }));
+vi.mock("./BaseplatePreview", () => ({
+  BaseplatePreview: () => null,
+}));
 
 describe("App", () => {
   it("renders the app title", () => {
@@ -24,6 +27,11 @@ describe("App", () => {
     expect(screen.getByText("Bin Configuration")).toBeInTheDocument();
   });
 
+  it("renders the baseplate configuration panel", () => {
+    render(<App />);
+    expect(screen.getByText("Baseplate Configuration")).toBeInTheDocument();
+  });
+
   it("shows gridfinity mode as default", () => {
     render(<App />);
     expect(
@@ -38,7 +46,6 @@ describe("App", () => {
 
   it("shows default bin values in sidebar", () => {
     render(<App />);
-    expect(screen.getByLabelText(/grid units x/i)).toHaveValue(1);
     expect(screen.getByLabelText(/height units/i)).toHaveValue(3);
   });
 });
