@@ -34,6 +34,11 @@ describe("App", () => {
     expect(screen.getByTestId("layout-grid")).toBeInTheDocument();
   });
 
+  it("renders the print planner", () => {
+    render(<App />);
+    expect(screen.getByText("Print Planner")).toBeInTheDocument();
+  });
+
   it("renders the preview mode toggle", () => {
     render(<App />);
     expect(

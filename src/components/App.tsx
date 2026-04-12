@@ -13,6 +13,7 @@ import { PreviewProvider } from "./PreviewContext";
 import { PreviewModeToggle } from "./PreviewModeToggle";
 import { LayoutProvider } from "./LayoutContext";
 import { LayoutPanel } from "./LayoutPanel";
+import { PrintPlanPanel } from "./PrintPlanPanel";
 
 export function App(): React.JSX.Element {
   return (
@@ -47,6 +48,9 @@ export function App(): React.JSX.Element {
                       </section>
                       <section className="rounded-lg border border-zinc-700 bg-zinc-800 p-4">
                         <LayoutPanel />
+                      </section>
+                      <section className="rounded-lg border border-zinc-700 bg-zinc-800 p-4">
+                        <PrintPlanPanel />
                       </section>
                     </div>
 
