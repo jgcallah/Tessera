@@ -20,8 +20,9 @@ describe("App", () => {
     expect(screen.getByText("Tessera")).toBeInTheDocument();
   });
 
-  it("renders all three config panels", () => {
+  it("renders all config panels", () => {
     render(<App />);
+    expect(screen.getByText("Space Definition")).toBeInTheDocument();
     expect(screen.getByText("Grid Configuration")).toBeInTheDocument();
     expect(screen.getByText("Bin Configuration")).toBeInTheDocument();
     expect(screen.getByText("Baseplate Configuration")).toBeInTheDocument();
