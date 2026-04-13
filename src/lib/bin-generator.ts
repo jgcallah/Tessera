@@ -1,12 +1,15 @@
 import type { GridConfig } from "./grid-config";
 import type { BinConfig } from "./bin-config";
-import {
-  getBinDimensions,
-  GRIDFINITY_MAGNET_HOLE_INSET,
-} from "./bin-config";
+import { getBinDimensions } from "./bin-config";
 import { getGridDerivedValues } from "./grid-config";
 import { getManifold } from "./manifold";
-import { roundedRectPoints } from "./geometry";
+import {
+  roundedRectPoints,
+  getGridHolePositions,
+  ROUNDRECT_SEGMENTS,
+  CYLINDER_SEGMENTS,
+  EXTRUDE_CLEARANCE,
+} from "./geometry";
 import type Module from "manifold-3d";
 
 type ManifoldWasm = Awaited<ReturnType<typeof Module>>;
@@ -31,7 +34,7 @@ export async function generateBinMesh(
       dims.exteriorWidth,
       dims.exteriorLength,
       dims.cornerRadius,
-      8
+      ROUNDRECT_SEGMENTS
     );
     const outerCS = new wasm.CrossSection([outerPts]);
     intermediates.push(outerCS);
@@ -52,7 +55,7 @@ export async function generateBinMesh(
 
     // Interior cavity: from base height to top (cutting through for open top)
     const cavityHeight =
-      dims.totalHeight - dims.baseHeight - dims.stackingLipHeight + 0.1;
+      dims.totalHeight - dims.baseHeight - dims.stackingLipHeight + EXTRUDE_CLEARANCE;
     let innerSolid = innerCS.extrude(cavityHeight);
     intermediates.push(innerSolid);
 
@@ -113,6 +116,11 @@ export async function generateBinMesh(
   }
 }
 
+// Lip profile dimensions (mm)
+const LIP_BOTTOM_RECESS_HEIGHT = 1.8;
+const LIP_MIDDLE_RECESS_HEIGHT = 1.8;
+const LIP_LEDGE_OFFSET = 0.7;
+
 function carveLipProfile(
   wasm: ManifoldWasm,
   bin: Manifold,
@@ -130,14 +138,13 @@ function carveLipProfile(
     dims.interiorWidth,
     dims.interiorLength,
     innerRadius,
-    8
+    ROUNDRECT_SEGMENTS
   );
   const recessCS = new wasm.CrossSection([recessPts]);
   intermediates.push(recessCS);
 
-  // Bottom part of lip: normal wall recess (1.8mm tall)
-  const bottomRecessHeight = 1.8;
-  let bottomRecess = recessCS.extrude(bottomRecessHeight);
+  // Bottom part of lip: normal wall recess
+  let bottomRecess = recessCS.extrude(LIP_BOTTOM_RECESS_HEIGHT);
   intermediates.push(bottomRecess);
   bottomRecess = bottomRecess.translate(0, 0, lipBottom);
   intermediates.push(bottomRecess);
@@ -145,32 +152,31 @@ function carveLipProfile(
   const result = bin.subtract(bottomRecess);
   intermediates.push(result);
 
-  // Step 2: Narrower recess for the protruding ledge (middle zone, ~1.8mm)
-  const ledgeWidth = dims.interiorWidth - 2 * 0.7;
-  const ledgeLength = dims.interiorLength - 2 * 0.7;
-  const ledgeRadius = Math.max(innerRadius - 0.7, 0);
-  const ledgePts = roundedRectPoints(ledgeWidth, ledgeLength, ledgeRadius, 8);
+  // Step 2: Narrower recess for the protruding ledge
+  const ledgeWidth = dims.interiorWidth - 2 * LIP_LEDGE_OFFSET;
+  const ledgeLength = dims.interiorLength - 2 * LIP_LEDGE_OFFSET;
+  const ledgeRadius = Math.max(innerRadius - LIP_LEDGE_OFFSET, 0);
+  const ledgePts = roundedRectPoints(ledgeWidth, ledgeLength, ledgeRadius, ROUNDRECT_SEGMENTS);
   const ledgeCS = new wasm.CrossSection([ledgePts]);
   intermediates.push(ledgeCS);
 
-  const middleRecessHeight = 1.8;
-  let middleRecess = ledgeCS.extrude(middleRecessHeight);
+  let middleRecess = ledgeCS.extrude(LIP_MIDDLE_RECESS_HEIGHT);
   intermediates.push(middleRecess);
-  middleRecess = middleRecess.translate(0, 0, lipBottom + bottomRecessHeight);
+  middleRecess = middleRecess.translate(0, 0, lipBottom + LIP_BOTTOM_RECESS_HEIGHT);
   intermediates.push(middleRecess);
 
   const result2 = result.subtract(middleRecess);
   intermediates.push(result2);
 
-  // Step 3: Top opening (0.8mm, back to normal wall thickness)
-  const topRecessHeight = dims.stackingLipHeight - bottomRecessHeight - middleRecessHeight;
+  // Step 3: Top opening (remaining height, back to normal wall thickness)
+  const topRecessHeight = dims.stackingLipHeight - LIP_BOTTOM_RECESS_HEIGHT - LIP_MIDDLE_RECESS_HEIGHT;
   if (topRecessHeight > 0) {
     let topRecess = recessCS.extrude(topRecessHeight);
     intermediates.push(topRecess);
     topRecess = topRecess.translate(
       0,
       0,
-      lipBottom + bottomRecessHeight + middleRecessHeight
+      lipBottom + LIP_BOTTOM_RECESS_HEIGHT + LIP_MIDDLE_RECESS_HEIGHT
     );
     intermediates.push(topRecess);
 
@@ -182,34 +188,18 @@ function carveLipProfile(
   return result2;
 }
 
-function getMagnetHolePositions(
+function getHolePositions(
   binConfig: BinConfig,
   gridConfig: GridConfig
 ): [number, number][] {
-  const positions: [number, number][] = [];
   const cellSize = gridConfig.baseUnit;
-  const totalWidth = cellSize * binConfig.gridUnitsX;
-  const totalLength = cellSize * binConfig.gridUnitsY;
-
-  for (let ix = 0; ix < binConfig.gridUnitsX; ix++) {
-    for (let iy = 0; iy < binConfig.gridUnitsY; iy++) {
-      // Cell origin (centered at overall bin origin)
-      const cellX = ix * cellSize - totalWidth / 2 + cellSize / 2;
-      const cellY = iy * cellSize - totalLength / 2 + cellSize / 2;
-
-      // 4 corners of this cell
-      const inset = GRIDFINITY_MAGNET_HOLE_INSET;
-      const halfCell = cellSize / 2;
-      positions.push(
-        [cellX - halfCell + inset, cellY - halfCell + inset],
-        [cellX - halfCell + inset, cellY + halfCell - inset],
-        [cellX + halfCell - inset, cellY - halfCell + inset],
-        [cellX + halfCell - inset, cellY + halfCell - inset]
-      );
-    }
-  }
-
-  return positions;
+  return getGridHolePositions(
+    binConfig.gridUnitsX,
+    binConfig.gridUnitsY,
+    cellSize,
+    cellSize * binConfig.gridUnitsX,
+    cellSize * binConfig.gridUnitsY
+  );
 }
 
 function subtractMagnetHoles(
@@ -221,7 +211,7 @@ function subtractMagnetHoles(
   derived: ReturnType<typeof getGridDerivedValues>,
   intermediates: { delete(): void }[]
 ): Manifold {
-  const positions = getMagnetHolePositions(binConfig, gridConfig);
+  const positions = getHolePositions(binConfig, gridConfig);
   const holeDia = derived.magnetHoleDiameter;
   const holeDepth = derived.magnetHoleDepth;
 
@@ -232,7 +222,7 @@ function subtractMagnetHoles(
       holeDepth,
       holeDia / 2,
       holeDia / 2,
-      16,
+      CYLINDER_SEGMENTS,
       false
     );
     intermediates.push(cyl);
@@ -260,10 +250,10 @@ function subtractScrewHoles(
   derived: ReturnType<typeof getGridDerivedValues>,
   intermediates: { delete(): void }[]
 ): Manifold {
-  const positions = getMagnetHolePositions(binConfig, gridConfig);
+  const positions = getHolePositions(binConfig, gridConfig);
   const holeDia = derived.screwHoleDiameter;
   // Screw holes go through the entire base
-  const holeDepth = dims.baseHeight + 0.1;
+  const holeDepth = dims.baseHeight + EXTRUDE_CLEARANCE;
 
   const holes: Manifold[] = [];
   for (const [x, y] of positions) {
@@ -271,7 +261,7 @@ function subtractScrewHoles(
       holeDepth,
       holeDia / 2,
       holeDia / 2,
-      16,
+      CYLINDER_SEGMENTS,
       false
     );
     intermediates.push(cyl);

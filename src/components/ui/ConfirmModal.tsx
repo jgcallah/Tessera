@@ -37,6 +37,9 @@ export function ConfirmModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       onClick={onCancel}
       data-testid="confirm-modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-modal-title"
     >
       <div
         className="w-full max-w-sm rounded-lg border border-zinc-700 bg-zinc-800 p-6 shadow-xl"
@@ -44,7 +47,7 @@ export function ConfirmModal({
           e.stopPropagation();
         }}
       >
-        <h3 className="mb-2 text-lg font-semibold text-zinc-100">{title}</h3>
+        <h3 id="confirm-modal-title" className="mb-2 text-lg font-semibold text-zinc-100">{title}</h3>
         <p className="mb-6 text-sm text-zinc-400">{message}</p>
         <div className="flex justify-end gap-3">
           <button

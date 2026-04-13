@@ -1,4 +1,5 @@
 import type { GridConfig, ValidationResult } from "./grid-config";
+import { isPositiveInteger } from "./validation-utils";
 
 // ── Gridfinity Baseplate Constants ───────────────────────────────────────────
 
@@ -50,10 +51,6 @@ export function createBaseplateConfig(
 }
 
 // ── Validation ───────────────────────────────────────────────────────────────
-
-function isPositiveInteger(n: number): boolean {
-  return Number.isInteger(n) && n > 0;
-}
 
 export function validateBaseplateConfig(
   config: BaseplateConfig

@@ -1,4 +1,5 @@
 import type { GridConfig, ValidationResult } from "./grid-config";
+import { isPositiveInteger } from "./validation-utils";
 
 // ── Gridfinity Bin Constants ─────────────────────────────────────────────────
 
@@ -53,10 +54,6 @@ export function createBinConfig(overrides: Partial<BinConfig> = {}): BinConfig {
 }
 
 // ── Validation ───────────────────────────────────────────────────────────────
-
-function isPositiveInteger(n: number): boolean {
-  return Number.isInteger(n) && n > 0;
-}
 
 export function validateBinConfig(config: BinConfig): ValidationResult {
   const errors: string[] = [];

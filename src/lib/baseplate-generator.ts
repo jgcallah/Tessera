@@ -1,10 +1,15 @@
 import type { GridConfig } from "./grid-config";
 import type { BaseplateConfig } from "./baseplate-config";
 import { getBaseplateDimensions } from "./baseplate-config";
-import { GRIDFINITY_MAGNET_HOLE_INSET } from "./bin-config";
 import { getGridDerivedValues } from "./grid-config";
 import { getManifold } from "./manifold";
-import { roundedRectPoints } from "./geometry";
+import {
+  roundedRectPoints,
+  getGridHolePositions,
+  ROUNDRECT_SEGMENTS,
+  CYLINDER_SEGMENTS,
+  EXTRUDE_CLEARANCE,
+} from "./geometry";
 import type Module from "manifold-3d";
 
 type ManifoldWasm = Awaited<ReturnType<typeof Module>>;
@@ -70,11 +75,11 @@ export async function generateBaseplateMesh(
       dims.width,
       dims.length,
       dims.cornerRadius,
-      8
+      ROUNDRECT_SEGMENTS
     );
     const outerCS = new wasm.CrossSection([outerPts]);
     intermediates.push(outerCS);
-    const outerBound = outerCS.extrude(dims.totalHeight + 0.1);
+    const outerBound = outerCS.extrude(dims.totalHeight + EXTRUDE_CLEARANCE);
     intermediates.push(outerBound);
 
     const clipped = plate.intersect(outerBound);
@@ -104,7 +109,7 @@ export async function generateBaseplateMesh(
         gridConfig,
         dims,
         derived.screwHoleDiameter,
-        dims.totalHeight + 0.1,
+        dims.totalHeight + EXTRUDE_CLEARANCE,
         intermediates
       );
     }
@@ -138,38 +143,27 @@ function subtractHoles(
   intermediates: { delete(): void }[]
 ): Manifold {
   const cellSize = gridConfig.baseUnit;
+  const positions = getGridHolePositions(
+    config.gridUnitsX,
+    config.gridUnitsY,
+    cellSize,
+    dims.width,
+    dims.length
+  );
   const holes: Manifold[] = [];
 
-  for (let ix = 0; ix < config.gridUnitsX; ix++) {
-    for (let iy = 0; iy < config.gridUnitsY; iy++) {
-      const cellCenterX =
-        ix * cellSize - dims.width / 2 + cellSize / 2;
-      const cellCenterY =
-        iy * cellSize - dims.length / 2 + cellSize / 2;
-      const halfCell = cellSize / 2;
-      const inset = GRIDFINITY_MAGNET_HOLE_INSET;
-
-      const cornerPositions: [number, number][] = [
-        [cellCenterX - halfCell + inset, cellCenterY - halfCell + inset],
-        [cellCenterX - halfCell + inset, cellCenterY + halfCell - inset],
-        [cellCenterX + halfCell - inset, cellCenterY - halfCell + inset],
-        [cellCenterX + halfCell - inset, cellCenterY + halfCell - inset],
-      ];
-
-      for (const [x, y] of cornerPositions) {
-        let cyl = wasm.Manifold.cylinder(
-          holeDepth,
-          holeDiameter / 2,
-          holeDiameter / 2,
-          16,
-          false
-        );
-        intermediates.push(cyl);
-        cyl = cyl.translate(x, y, 0);
-        intermediates.push(cyl);
-        holes.push(cyl);
-      }
-    }
+  for (const [x, y] of positions) {
+    let cyl = wasm.Manifold.cylinder(
+      holeDepth,
+      holeDiameter / 2,
+      holeDiameter / 2,
+      CYLINDER_SEGMENTS,
+      false
+    );
+    intermediates.push(cyl);
+    cyl = cyl.translate(x, y, 0);
+    intermediates.push(cyl);
+    holes.push(cyl);
   }
 
   if (holes.length === 0) return plate;

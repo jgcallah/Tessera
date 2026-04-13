@@ -1,9 +1,11 @@
 import { useRef } from "react";
 import { useProject } from "./ProjectContext";
+import { useToast } from "./ui/Toast";
 
 export function ProjectPanel(): React.JSX.Element {
   const { exportProject, importProject, importError, clearImportError } =
     useProject();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -14,7 +16,11 @@ export function ProjectPanel(): React.JSX.Element {
     reader.onload = () => {
       if (typeof reader.result === "string") {
         importProject(reader.result);
+        toast("Project loaded", "success");
       }
+    };
+    reader.onerror = () => {
+      toast("Failed to read file", "error");
     };
     reader.readAsText(file);
 
@@ -22,11 +28,16 @@ export function ProjectPanel(): React.JSX.Element {
     e.target.value = "";
   }
 
+  function handleSave() {
+    exportProject();
+    toast("Project saved", "success");
+  }
+
   return (
     <div className="flex items-center gap-2">
       <button
         type="button"
-        onClick={exportProject}
+        onClick={handleSave}
         className="rounded bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-600"
         data-testid="save-project"
       >
@@ -51,13 +62,15 @@ export function ProjectPanel(): React.JSX.Element {
         data-testid="file-input"
       />
       {importError && (
-        <span
-          className="text-xs text-red-400"
+        <button
+          type="button"
+          className="text-xs text-red-400 hover:text-red-300"
           data-testid="import-error"
           onClick={clearImportError}
+          aria-label="Dismiss error"
         >
           {importError}
-        </span>
+        </button>
       )}
     </div>
   );

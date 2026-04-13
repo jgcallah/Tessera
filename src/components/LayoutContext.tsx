@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useMemo, useCallback } from "react";
+import { createContext, useContext, useState, useMemo, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { LayoutState, PartEntry, BinProperties, LayoutHistory } from "../lib/layout";
 import {
@@ -61,7 +61,7 @@ export function LayoutProvider({
   const layout = history.present;
 
   // Update grid dimensions when space/grid config changes
-  useMemo(() => {
+  useEffect(() => {
     setHistory((prev) => ({
       ...prev,
       present: {

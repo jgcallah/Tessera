@@ -1,5 +1,5 @@
 import { BufferGeometry, Float32BufferAttribute } from "three";
-import { GRIDFINITY_LIP_HEIGHT } from "./bin-config";
+import { GRIDFINITY_LIP_HEIGHT, GRIDFINITY_MAGNET_HOLE_INSET } from "./bin-config";
 
 /**
  * Convert a Manifold Mesh to a Three.js BufferGeometry.
@@ -98,4 +98,49 @@ export function stackingLipProfile(): [number, number][] {
     [-0.4, 0], // bottom of lip, recessed
     [0, 0], // bottom, back to inner wall
   ];
+}
+
+// ── Shared Grid Geometry Helpers ─────────────────────────────────────────────
+
+/** Segments for rounded rectangle extrusions */
+export const ROUNDRECT_SEGMENTS = 8;
+
+/** Segments for cylinder holes */
+export const CYLINDER_SEGMENTS = 16;
+
+/** Small clearance added to extrude heights to prevent manifold coplanar issues */
+export const EXTRUDE_CLEARANCE = 0.1;
+
+/**
+ * Compute magnet/screw hole center positions for a grid of cells.
+ * Each cell has 4 corner holes inset from the cell edge.
+ */
+export function getGridHolePositions(
+  gridUnitsX: number,
+  gridUnitsY: number,
+  cellSize: number,
+  totalWidth: number,
+  totalLength: number
+): [number, number][] {
+  const positions: [number, number][] = [];
+  const halfW = totalWidth / 2;
+  const halfL = totalLength / 2;
+
+  for (let ix = 0; ix < gridUnitsX; ix++) {
+    for (let iy = 0; iy < gridUnitsY; iy++) {
+      const cx = ix * cellSize - halfW + cellSize / 2;
+      const cy = iy * cellSize - halfL + cellSize / 2;
+      const half = cellSize / 2;
+      const inset = GRIDFINITY_MAGNET_HOLE_INSET;
+
+      positions.push(
+        [cx - half + inset, cy - half + inset],
+        [cx - half + inset, cy + half - inset],
+        [cx + half - inset, cy - half + inset],
+        [cx + half - inset, cy + half - inset]
+      );
+    }
+  }
+
+  return positions;
 }
