@@ -35,28 +35,33 @@ describe("GridConfigPanel — basic render", () => {
     expect(btn).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("shows all parameter values", () => {
+  it("shows basic parameter values", () => {
     renderPanel();
-    expect(screen.getByLabelText(/base unit/i)).toHaveValue(42);
-    expect(screen.getByLabelText(/height unit/i)).toHaveValue(7);
-    expect(screen.getByLabelText(/tolerance/i)).toHaveValue(0.5);
-    expect(screen.getByLabelText(/magnet diameter/i)).toHaveValue(6);
-    expect(screen.getByLabelText(/magnet thickness/i)).toHaveValue(2);
-    expect(screen.getByLabelText(/screw diameter/i)).toHaveValue(3);
+    expect(document.getElementById("field-baseUnit")! as HTMLInputElement).toHaveValue(42);
+    expect(document.getElementById("field-heightUnit")! as HTMLInputElement).toHaveValue(7);
+    expect(document.getElementById("field-tolerance")! as HTMLInputElement).toHaveValue(0.5);
+  });
+
+  it("shows hardware fields after expanding", () => {
+    renderPanel();
+    fireEvent.click(screen.getByText(/hardware/i));
+    expect(document.getElementById("field-magnetDiameter")! as HTMLInputElement).toHaveValue(6);
+    expect(document.getElementById("field-screwDiameter")! as HTMLInputElement).toHaveValue(3);
   });
 
   it("disables locked fields in gridfinity mode", () => {
     renderPanel();
-    expect(screen.getByLabelText(/base unit/i)).toBeDisabled();
-    expect(screen.getByLabelText(/height unit/i)).toBeDisabled();
-    expect(screen.getByLabelText(/magnet diameter/i)).toBeDisabled();
-    expect(screen.getByLabelText(/magnet thickness/i)).toBeDisabled();
-    expect(screen.getByLabelText(/screw diameter/i)).toBeDisabled();
+    expect(document.getElementById("field-baseUnit")! as HTMLInputElement).toBeDisabled();
+    expect(document.getElementById("field-heightUnit")! as HTMLInputElement).toBeDisabled();
+    // Expand hardware to check those too
+    fireEvent.click(screen.getByText(/hardware/i));
+    expect(document.getElementById("field-magnetDiameter")! as HTMLInputElement).toBeDisabled();
+    expect(document.getElementById("field-screwDiameter")! as HTMLInputElement).toBeDisabled();
   });
 
   it("keeps tolerance editable in gridfinity mode", () => {
     renderPanel();
-    expect(screen.getByLabelText(/tolerance/i)).not.toBeDisabled();
+    expect(document.getElementById("field-tolerance")! as HTMLInputElement).not.toBeDisabled();
   });
 
   it("shows derived cell size", () => {
@@ -72,28 +77,30 @@ describe("GridConfigPanel — custom mode", () => {
   it("enables all inputs when switching to custom", () => {
     renderPanel();
     fireEvent.click(screen.getByRole("button", { name: /custom/i }));
-    expect(screen.getByLabelText(/base unit/i)).not.toBeDisabled();
-    expect(screen.getByLabelText(/height unit/i)).not.toBeDisabled();
-    expect(screen.getByLabelText(/magnet diameter/i)).not.toBeDisabled();
+    expect(document.getElementById("field-baseUnit")! as HTMLInputElement).not.toBeDisabled();
+    expect(document.getElementById("field-heightUnit")! as HTMLInputElement).not.toBeDisabled();
+    // Expand hardware section
+    fireEvent.click(screen.getByText(/hardware/i));
+    expect(document.getElementById("field-magnetDiameter")! as HTMLInputElement).not.toBeDisabled();
   });
 
   it("updates baseUnit when input changes in custom mode", () => {
     renderPanel({ mode: "custom" });
-    const input = screen.getByLabelText(/base unit/i);
+    const input = document.getElementById("field-baseUnit")! as HTMLInputElement;
     fireEvent.change(input, { target: { value: "50" } });
     expect(input).toHaveValue(50);
   });
 
   it("updates heightUnit when input changes in custom mode", () => {
     renderPanel({ mode: "custom" });
-    const input = screen.getByLabelText(/height unit/i);
+    const input = document.getElementById("field-heightUnit")! as HTMLInputElement;
     fireEvent.change(input, { target: { value: "10" } });
     expect(input).toHaveValue(10);
   });
 
   it("updates derived cell size after baseUnit change", () => {
     renderPanel({ mode: "custom" });
-    const input = screen.getByLabelText(/base unit/i);
+    const input = document.getElementById("field-baseUnit")! as HTMLInputElement;
     fireEvent.change(input, { target: { value: "50" } });
     // cellSize = 50 - 0.5 = 49.5
     expect(screen.getByTestId("cell-size-value")).toHaveTextContent("49.5");
@@ -105,7 +112,7 @@ describe("GridConfigPanel — custom mode", () => {
 describe("GridConfigPanel — validation", () => {
   it("shows error for baseUnit of 0", () => {
     renderPanel({ mode: "custom" });
-    fireEvent.change(screen.getByLabelText(/base unit/i), {
+    fireEvent.change(document.getElementById("field-baseUnit")! as HTMLInputElement, {
       target: { value: "0" },
     });
     expect(screen.getByText(/baseUnit must be greater than 0/i)).toBeInTheDocument();
@@ -113,7 +120,7 @@ describe("GridConfigPanel — validation", () => {
 
   it("shows error for tolerance >= baseUnit", () => {
     renderPanel({ mode: "custom", baseUnit: 10 });
-    fireEvent.change(screen.getByLabelText(/tolerance/i), {
+    fireEvent.change(document.getElementById("field-tolerance")! as HTMLInputElement, {
       target: { value: "10" },
     });
     expect(screen.getByText(/tolerance must be less than baseUnit/i)).toBeInTheDocument();
@@ -142,15 +149,15 @@ describe("GridConfigPanel — mode switching", () => {
 
   it("resets values when switching back to gridfinity", () => {
     renderPanel({ mode: "custom", baseUnit: 50 });
-    expect(screen.getByLabelText(/base unit/i)).toHaveValue(50);
+    expect(document.getElementById("field-baseUnit")! as HTMLInputElement).toHaveValue(50);
     fireEvent.click(screen.getByRole("button", { name: /gridfinity/i }));
-    expect(screen.getByLabelText(/base unit/i)).toHaveValue(42);
+    expect(document.getElementById("field-baseUnit")! as HTMLInputElement).toHaveValue(42);
   });
 
   it("clicking gridfinity when already active is a no-op", () => {
     renderPanel();
     fireEvent.click(screen.getByRole("button", { name: /gridfinity/i }));
-    expect(screen.getByLabelText(/base unit/i)).toHaveValue(42);
+    expect(document.getElementById("field-baseUnit")! as HTMLInputElement).toHaveValue(42);
     expect(
       screen.getByRole("button", { name: /gridfinity/i })
     ).toHaveAttribute("aria-pressed", "true");

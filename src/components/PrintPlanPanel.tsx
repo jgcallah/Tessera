@@ -13,6 +13,13 @@ import { createBinConfig } from "../lib/bin-config";
 
 const SHEET_SCALE = 0.8; // px per mm for sheet visualization
 
+const BED_PRESETS: { label: string; width: number; length: number }[] = [
+  { label: "Ender 3", width: 220, length: 220 },
+  { label: "Bambu A1", width: 256, length: 256 },
+  { label: "Prusa MK4", width: 250, length: 210 },
+  { label: "Voron 350", width: 350, length: 350 },
+];
+
 export function PrintPlanPanel(): React.JSX.Element {
   const { partsList } = useLayout();
   const { config: gridConfig } = useGridConfig();
@@ -57,6 +64,32 @@ export function PrintPlanPanel(): React.JSX.Element {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Print Planner</h2>
+
+      {/* Bed Presets */}
+      <div className="flex flex-wrap gap-1.5">
+        {BED_PRESETS.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() => {
+              setBedConfig(
+                createPrintBedConfig({
+                  bedWidth: preset.width,
+                  bedLength: preset.length,
+                })
+              );
+            }}
+            className={`rounded px-2 py-1 text-xs transition-colors ${
+              bedConfig.bedWidth === preset.width &&
+              bedConfig.bedLength === preset.length
+                ? "bg-violet-700 text-white"
+                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
 
       {/* Bed Config */}
       <div className="flex gap-2">

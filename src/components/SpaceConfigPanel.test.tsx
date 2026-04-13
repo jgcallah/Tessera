@@ -26,9 +26,12 @@ describe("SpaceConfigPanel — basic render", () => {
 
   it("shows dimension inputs with defaults", () => {
     renderPanel();
-    expect(screen.getByLabelText(/width/i)).toHaveValue(400);
-    expect(screen.getByLabelText(/length/i)).toHaveValue(300);
-    expect(screen.getByLabelText(/depth/i)).toHaveValue(50);
+    const w = document.getElementById("space-width") as HTMLInputElement;
+    const l = document.getElementById("space-length") as HTMLInputElement;
+    const d = document.getElementById("space-depth") as HTMLInputElement;
+    expect(w.value).toBe("400");
+    expect(l.value).toBe("300");
+    expect(d.value).toBe("50");
   });
 
   it("shows grid fit results", () => {
@@ -57,7 +60,7 @@ describe("SpaceConfigPanel — basic render", () => {
 describe("SpaceConfigPanel — interactions", () => {
   it("updates grid fit when width changes", () => {
     renderPanel();
-    fireEvent.change(screen.getByLabelText(/width/i), {
+    fireEvent.change(document.getElementById("space-width")!, {
       target: { value: "210" },
     });
     // floor(210 / 42) = 5
@@ -66,7 +69,7 @@ describe("SpaceConfigPanel — interactions", () => {
 
   it("updates grid fit when length changes", () => {
     renderPanel();
-    fireEvent.change(screen.getByLabelText(/length/i), {
+    fireEvent.change(document.getElementById("space-length")!, {
       target: { value: "126" },
     });
     // floor(126 / 42) = 3
@@ -75,7 +78,7 @@ describe("SpaceConfigPanel — interactions", () => {
 
   it("shows validation error for width of 0", () => {
     renderPanel();
-    fireEvent.change(screen.getByLabelText(/width/i), {
+    fireEvent.change(document.getElementById("space-width")!, {
       target: { value: "0" },
     });
     expect(
