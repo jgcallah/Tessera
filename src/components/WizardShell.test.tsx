@@ -17,6 +17,9 @@ vi.mock("./BaseplatePreview", () => ({ BaseplatePreview: () => null }));
 vi.mock("./ManifoldDemo", () => ({
   ManifoldDemo: () => <span>WASM mock</span>,
 }));
+vi.mock("./ui/Toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
 
 function renderShell() {
   return render(

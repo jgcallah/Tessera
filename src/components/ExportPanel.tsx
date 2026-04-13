@@ -15,6 +15,7 @@ import {
   downloadBlob,
 } from "../lib/export";
 import type { LayoutItem, BinProperties } from "../lib/layout";
+import { useToast } from "./ui/Toast";
 
 /** Create a unique key for a bin's full configuration */
 function binConfigKey(item: LayoutItem): string {
@@ -35,6 +36,7 @@ export function ExportPanel(): React.JSX.Element {
   const { layout } = useLayout();
   const { config: gridConfig } = useGridConfig();
   const [exporting, setExporting] = useState(false);
+  const { toast } = useToast();
 
   // Group layout items by full config (not just footprint)
   const uniqueBins: UniqueBin[] = useMemo(() => {
@@ -109,8 +111,10 @@ export function ExportPanel(): React.JSX.Element {
 
       const blob = await createExportZip(stlFiles, printPlan);
       downloadBlob(blob, "tessera-export.zip");
+      toast(`Exported ${stlFiles.length} STL files`, "success");
     } catch (err: unknown) {
       console.error("Export failed:", err);
+      toast("Export failed — check console for details", "error");
     } finally {
       setExporting(false);
     }

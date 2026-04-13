@@ -9,6 +9,7 @@ import { WizardProvider } from "./WizardContext";
 import { ProjectProvider } from "./ProjectContext";
 import { WizardShell } from "./WizardShell";
 import { StartScreen } from "./StartScreen";
+import { ToastProvider } from "./ui/Toast";
 import type { ProjectData } from "../lib/project";
 
 interface ActiveProject {
@@ -37,56 +38,56 @@ export function App(): React.JSX.Element {
     setActiveProject(null);
   }, []);
 
-  if (!activeProject) {
-    return (
-      <StartScreen
-        onNewProject={handleNewProject}
-        onOpenProject={handleOpenProject}
-      />
-    );
-  }
-
   return (
-    <WizardProvider>
-      <GridConfigProvider
-        {...(activeProject.data
-          ? { initialConfig: activeProject.data.gridConfig }
-          : {})}
-      >
-        <SpaceConfigProvider
-          {...(activeProject.data
-            ? { initialConfig: activeProject.data.spaceConfig }
-            : {})}
-        >
-          <BinConfigProvider
+    <ToastProvider>
+      {!activeProject ? (
+        <StartScreen
+          onNewProject={handleNewProject}
+          onOpenProject={handleOpenProject}
+        />
+      ) : (
+        <WizardProvider>
+          <GridConfigProvider
             {...(activeProject.data
-              ? { initialConfig: activeProject.data.binConfig }
+              ? { initialConfig: activeProject.data.gridConfig }
               : {})}
           >
-            <BaseplateConfigProvider
+            <SpaceConfigProvider
               {...(activeProject.data
-                ? { initialConfig: activeProject.data.baseplateConfig }
+                ? { initialConfig: activeProject.data.spaceConfig }
                 : {})}
             >
-              <LayoutProvider>
-                <PreviewProvider>
-                  <ProjectProvider
-                    projectName={activeProject.name}
-                    {...(activeProject.id
-                      ? { projectId: activeProject.id }
-                      : {})}
-                    {...(activeProject.data
-                      ? { initialData: activeProject.data }
-                      : {})}
-                  >
-                    <WizardShell onBackToStart={handleBackToStart} />
-                  </ProjectProvider>
-                </PreviewProvider>
-              </LayoutProvider>
-            </BaseplateConfigProvider>
-          </BinConfigProvider>
-        </SpaceConfigProvider>
-      </GridConfigProvider>
-    </WizardProvider>
+              <BinConfigProvider
+                {...(activeProject.data
+                  ? { initialConfig: activeProject.data.binConfig }
+                  : {})}
+              >
+                <BaseplateConfigProvider
+                  {...(activeProject.data
+                    ? { initialConfig: activeProject.data.baseplateConfig }
+                    : {})}
+                >
+                  <LayoutProvider>
+                    <PreviewProvider>
+                      <ProjectProvider
+                        projectName={activeProject.name}
+                        {...(activeProject.id
+                          ? { projectId: activeProject.id }
+                          : {})}
+                        {...(activeProject.data
+                          ? { initialData: activeProject.data }
+                          : {})}
+                      >
+                        <WizardShell onBackToStart={handleBackToStart} />
+                      </ProjectProvider>
+                    </PreviewProvider>
+                  </LayoutProvider>
+                </BaseplateConfigProvider>
+              </BinConfigProvider>
+            </SpaceConfigProvider>
+          </GridConfigProvider>
+        </WizardProvider>
+      )}
+    </ToastProvider>
   );
 }

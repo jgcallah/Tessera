@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { StartScreen } from "./StartScreen";
+
+vi.mock("./ui/Toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
 import { saveProject } from "../lib/project-storage";
 import { createDefaultGridConfig } from "../lib/grid-config";
 import { createDefaultSpaceConfig } from "../lib/space-config";
@@ -69,19 +73,18 @@ describe("StartScreen — with saved projects", () => {
     );
   });
 
-  it("deletes a project when clicking delete and confirming", () => {
+  it("shows confirm modal when clicking delete", () => {
     const id = saveProject("To Delete", createTestData());
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<StartScreen onNewProject={() => {}} onOpenProject={() => {}} />);
     fireEvent.click(screen.getByTestId(`delete-${id}`));
-    expect(screen.queryByText("To Delete")).not.toBeInTheDocument();
+    expect(screen.getByTestId("confirm-modal")).toBeInTheDocument();
   });
 
-  it("does not delete when confirm is cancelled", () => {
-    const id = saveProject("Keep Me", createTestData());
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("deletes a project when confirming the modal", () => {
+    const id = saveProject("To Delete", createTestData());
     render(<StartScreen onNewProject={() => {}} onOpenProject={() => {}} />);
     fireEvent.click(screen.getByTestId(`delete-${id}`));
-    expect(screen.getByText("Keep Me")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("confirm-btn"));
+    expect(screen.queryByText("To Delete")).not.toBeInTheDocument();
   });
 });

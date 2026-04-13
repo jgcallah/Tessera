@@ -7,6 +7,9 @@ import { PrintExportStep } from "./PrintExportStep";
 
 vi.mock("@react-three/fiber", () => import("../../__mocks__/@react-three/fiber"));
 vi.mock("@react-three/drei", () => import("../../__mocks__/@react-three/drei"));
+vi.mock("../ui/Toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
 
 function renderStep() {
   return render(
