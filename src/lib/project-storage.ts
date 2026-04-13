@@ -6,6 +6,10 @@ export interface ProjectSummary {
   id: string;
   name: string;
   savedAt: string; // ISO date string
+  createdAt?: string;
+  binCount?: number;
+  spaceWidth?: number;
+  spaceLength?: number;
 }
 
 interface StoredProject {
@@ -51,7 +55,17 @@ export function saveProject(
   const id = existingId ?? generateId();
   const now = new Date().toISOString();
 
-  const summary: ProjectSummary = { id, name, savedAt: now };
+  // Extract metadata from project data
+  const existingEntry = getIndex().projects.find((p) => p.id === id);
+  const summary: ProjectSummary = {
+    id,
+    name,
+    savedAt: now,
+    createdAt: existingEntry?.createdAt ?? now,
+    binCount: data.layout?.items?.length ?? 0,
+    spaceWidth: data.spaceConfig?.width,
+    spaceLength: data.spaceConfig?.length,
+  };
   const stored: StoredProject = { summary, data };
 
   localStorage.setItem(projectKey(id), JSON.stringify(stored));
