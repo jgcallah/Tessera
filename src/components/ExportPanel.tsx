@@ -14,58 +14,99 @@ import {
   generatePrintPlanMarkdown,
   downloadBlob,
 } from "../lib/export";
+import type { LayoutItem, BinProperties } from "../lib/layout";
+
+/** Create a unique key for a bin's full configuration */
+function binConfigKey(item: LayoutItem): string {
+  const p = item.binProperties;
+  return `${item.gridUnitsX}x${item.gridUnitsY}_h${p.heightUnits}_lip${p.includeStackingLip ? 1 : 0}_mag${p.includeMagnetHoles ? 1 : 0}_scr${p.includeScrewHoles ? 1 : 0}_dx${p.dividersX}_dy${p.dividersY}`;
+}
+
+interface UniqueBin {
+  key: string;
+  gridUnitsX: number;
+  gridUnitsY: number;
+  properties: BinProperties;
+  quantity: number;
+  label: string;
+}
 
 export function ExportPanel(): React.JSX.Element {
-  const { partsList } = useLayout();
+  const { layout } = useLayout();
   const { config: gridConfig } = useGridConfig();
   const [exporting, setExporting] = useState(false);
 
+  // Group layout items by full config (not just footprint)
+  const uniqueBins: UniqueBin[] = useMemo(() => {
+    const map = new Map<string, UniqueBin>();
+    for (const item of layout.items) {
+      const key = binConfigKey(item);
+      const existing = map.get(key);
+      if (existing) {
+        existing.quantity++;
+      } else {
+        const p = item.binProperties;
+        map.set(key, {
+          key,
+          gridUnitsX: item.gridUnitsX,
+          gridUnitsY: item.gridUnitsY,
+          properties: p,
+          quantity: 1,
+          label: `Bin ${item.gridUnitsX}×${item.gridUnitsY}×${p.heightUnits}u`,
+        });
+      }
+    }
+    return [...map.values()];
+  }, [layout.items]);
+
   const packableItems: PackableItem[] = useMemo(() => {
-    return partsList.map((part) => {
+    return uniqueBins.map((bin) => {
       const dims = getBinDimensions(
         createBinConfig({
-          gridUnitsX: part.gridUnitsX,
-          gridUnitsY: part.gridUnitsY,
+          gridUnitsX: bin.gridUnitsX,
+          gridUnitsY: bin.gridUnitsY,
+          heightUnits: bin.properties.heightUnits,
         }),
         gridConfig
       );
       return {
-        id: `${part.gridUnitsX}x${part.gridUnitsY}`,
+        id: bin.key,
         width: dims.exteriorWidth,
         length: dims.exteriorLength,
-        quantity: part.quantity,
-        label: `Bin ${part.gridUnitsX}×${part.gridUnitsY}`,
+        quantity: bin.quantity,
+        label: bin.label,
       };
     });
-  }, [partsList, gridConfig]);
+  }, [uniqueBins, gridConfig]);
 
   const handleExportZip = useCallback(async () => {
-    if (partsList.length === 0) return;
+    if (uniqueBins.length === 0) return;
     setExporting(true);
 
     try {
-      // Generate STL for each unique part
       const stlFiles: { name: string; data: ArrayBuffer }[] = [];
-      for (const part of partsList) {
+      for (const bin of uniqueBins) {
         const binConfig = createBinConfig({
-          gridUnitsX: part.gridUnitsX,
-          gridUnitsY: part.gridUnitsY,
+          gridUnitsX: bin.gridUnitsX,
+          gridUnitsY: bin.gridUnitsY,
+          heightUnits: bin.properties.heightUnits,
+          includeStackingLip: bin.properties.includeStackingLip,
+          includeMagnetHoles: bin.properties.includeMagnetHoles,
+          includeScrewHoles: bin.properties.includeScrewHoles,
         });
         const manifold = await generateBinMesh(binConfig, gridConfig);
         const mesh = manifold.getMesh();
         const stl = meshToStlBinary(mesh);
         manifold.delete();
 
-        const name = `bin-${part.gridUnitsX}x${part.gridUnitsY}.stl`;
+        const name = `${bin.label.replace(/[×]/g, "x").replace(/\s+/g, "-")}.stl`;
         stlFiles.push({ name, data: stl });
       }
 
-      // Generate print plan
       const bed = createDefaultPrintBedConfig();
       const packingResult = packParts(packableItems, bed);
       const printPlan = generatePrintPlanMarkdown(packingResult);
 
-      // Create and download ZIP
       const blob = await createExportZip(stlFiles, printPlan);
       downloadBlob(blob, "tessera-export.zip");
     } catch (err: unknown) {
@@ -73,18 +114,18 @@ export function ExportPanel(): React.JSX.Element {
     } finally {
       setExporting(false);
     }
-  }, [partsList, gridConfig, packableItems]);
+  }, [uniqueBins, gridConfig, packableItems]);
 
   const handleExportPrintPlan = useCallback(() => {
-    if (partsList.length === 0) return;
+    if (uniqueBins.length === 0) return;
     const bed = createDefaultPrintBedConfig();
     const packingResult = packParts(packableItems, bed);
     const markdown = generatePrintPlanMarkdown(packingResult);
     const blob = new Blob([markdown], { type: "text/markdown" });
     downloadBlob(blob, "print-plan.md");
-  }, [partsList, packableItems]);
+  }, [uniqueBins, packableItems]);
 
-  const hasItems = partsList.length > 0;
+  const hasItems = layout.items.length > 0;
 
   return (
     <div className="space-y-3">
@@ -97,8 +138,9 @@ export function ExportPanel(): React.JSX.Element {
       ) : (
         <>
           <p className="text-xs text-zinc-400">
-            {partsList.length} unique part{partsList.length !== 1 ? "s" : ""},{" "}
-            {partsList.reduce((sum, p) => sum + p.quantity, 0)} total
+            {uniqueBins.length} unique part
+            {uniqueBins.length !== 1 ? "s" : ""},{" "}
+            {layout.items.length} total
           </p>
 
           <button
