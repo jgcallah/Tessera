@@ -1,15 +1,24 @@
 import type { GridConfig } from "./grid-config";
 import type { BaseplateConfig } from "./baseplate-config";
-import { getBaseplateDimensions } from "./baseplate-config";
+import {
+  getBaseplateDimensions,
+  SOCKET_CHAMFER_BOTTOM,
+  SOCKET_VERTICAL,
+  SOCKET_CHAMFER_TOP,
+  SOCKET_TOTAL_DEPTH,
+  SOCKET_LEDGE,
+} from "./baseplate-config";
 import { getGridDerivedValues } from "./grid-config";
 import { getManifold } from "./manifold";
 import {
   roundedRectPoints,
   getGridHolePositions,
+  buildChamferedProfile,
   ROUNDRECT_SEGMENTS,
   CYLINDER_SEGMENTS,
   EXTRUDE_CLEARANCE,
 } from "./geometry";
+import type { ProfileSegment } from "./geometry";
 import type Module from "manifold-3d";
 
 type ManifoldWasm = Awaited<ReturnType<typeof Module>>;
@@ -86,6 +95,16 @@ export async function generateBaseplateMesh(
     intermediates.push(clipped);
     plate = clipped;
 
+    // ── Socket profiles (chamfered cavity in top of each cell) ──────────
+    plate = carveSocketProfiles(
+      wasm,
+      plate,
+      config,
+      gridConfig,
+      dims,
+      intermediates
+    );
+
     // Magnet holes
     if (config.includeMagnetHoles) {
       plate = subtractHoles(
@@ -130,6 +149,70 @@ export async function generateBaseplateMesh(
       }
     }
   }
+}
+
+function carveSocketProfiles(
+  wasm: ManifoldWasm,
+  plate: Manifold,
+  config: BaseplateConfig,
+  gridConfig: GridConfig,
+  dims: ReturnType<typeof getBaseplateDimensions>,
+  intermediates: { delete(): void }[]
+): Manifold {
+  const cellSize = gridConfig.baseUnit;
+  const halfW = dims.width / 2;
+  const halfL = dims.length / 2;
+
+  // Socket opening size per cell (with tolerance + ledge)
+  const socketWidth = cellSize - gridConfig.tolerance - 2 * SOCKET_LEDGE;
+  const socketPts = roundedRectPoints(
+    socketWidth,
+    socketWidth,
+    dims.cornerRadius,
+    ROUNDRECT_SEGMENTS
+  );
+  const socketCS = new wasm.CrossSection([socketPts]);
+  intermediates.push(socketCS);
+
+  const socketSegments: ProfileSegment[] = [
+    { height: SOCKET_CHAMFER_BOTTOM, startInset: SOCKET_TOTAL_DEPTH, endInset: SOCKET_TOTAL_DEPTH - SOCKET_CHAMFER_BOTTOM },
+    { height: SOCKET_VERTICAL, startInset: SOCKET_TOTAL_DEPTH - SOCKET_CHAMFER_BOTTOM, endInset: SOCKET_TOTAL_DEPTH - SOCKET_CHAMFER_BOTTOM },
+    { height: SOCKET_CHAMFER_TOP, startInset: SOCKET_TOTAL_DEPTH - SOCKET_CHAMFER_BOTTOM, endInset: 0 },
+  ];
+
+  // Socket Z starts from (totalHeight - socketTotalDepth) up to totalHeight
+  const socketTotalHeight = SOCKET_CHAMFER_BOTTOM + SOCKET_VERTICAL + SOCKET_CHAMFER_TOP;
+  const socketBaseZ = dims.totalHeight - socketTotalHeight;
+
+  // Build one socket template
+  const socketTemplate = buildChamferedProfile(
+    wasm,
+    socketCS,
+    socketSegments,
+    socketBaseZ,
+    intermediates
+  );
+
+  // Create translated copies for each cell and union them
+  const sockets: Manifold[] = [];
+  for (let ix = 0; ix < config.gridUnitsX; ix++) {
+    for (let iy = 0; iy < config.gridUnitsY; iy++) {
+      const cx = ix * cellSize - halfW + cellSize / 2;
+      const cy = iy * cellSize - halfL + cellSize / 2;
+      const translated = socketTemplate.translate(cx, cy, 0);
+      intermediates.push(translated);
+      sockets.push(translated);
+    }
+  }
+
+  if (sockets.length === 0) return plate;
+
+  const allSockets = wasm.Manifold.union(sockets);
+  intermediates.push(allSockets);
+
+  const result = plate.subtract(allSockets);
+  intermediates.push(result);
+  return result;
 }
 
 function subtractHoles(

@@ -1,5 +1,10 @@
 import { BufferGeometry, Float32BufferAttribute } from "three";
 import { GRIDFINITY_LIP_HEIGHT, GRIDFINITY_MAGNET_HOLE_INSET } from "./bin-config";
+import type Module from "manifold-3d";
+
+type ManifoldWasm = Awaited<ReturnType<typeof Module>>;
+type Manifold = InstanceType<ManifoldWasm["Manifold"]>;
+type CrossSection = InstanceType<ManifoldWasm["CrossSection"]>;
 
 /**
  * Convert a Manifold Mesh to a Three.js BufferGeometry.
@@ -98,6 +103,105 @@ export function stackingLipProfile(): [number, number][] {
     [-0.4, 0], // bottom of lip, recessed
     [0, 0], // bottom, back to inner wall
   ];
+}
+
+// ── Chamfered Profile Builder ────────────────────────────────────────────────
+
+/**
+ * Describes one segment of a chamfered profile.
+ * Inset values are measured inward from the base cross-section outline.
+ */
+export interface ProfileSegment {
+  height: number;
+  startInset: number;
+  endInset: number;
+}
+
+const SLAB_THICKNESS = 0.01;
+
+/**
+ * Build a solid with chamfered transitions using hull-between-slices.
+ *
+ * Takes a base CrossSection (the largest outline) and profile segments
+ * describing how the outline shrinks at each Z-level. Uses
+ * CrossSection.offset() to compute inset outlines (correctly adjusting
+ * corner radii), then hulls thin slabs at transition Z-levels.
+ *
+ * @param wasm      Manifold WASM instance
+ * @param baseCS    The largest (zero-inset) cross-section
+ * @param segments  Profile segments ordered bottom to top
+ * @param baseZ     Z position of the profile bottom
+ * @param intermediates  Cleanup tracker for WASM objects
+ */
+export function buildChamferedProfile(
+  wasm: ManifoldWasm,
+  baseCS: CrossSection,
+  segments: ProfileSegment[],
+  baseZ: number,
+  intermediates: { delete(): void }[]
+): Manifold {
+  // Collect Z-levels and their insets
+  interface ZLevel {
+    z: number;
+    inset: number;
+  }
+  const levels: ZLevel[] = [];
+  let z = baseZ;
+  for (const seg of segments) {
+    if (levels.length === 0 || levels[levels.length - 1]!.inset !== seg.startInset) {
+      levels.push({ z, inset: seg.startInset });
+    }
+    z += seg.height;
+    levels.push({ z, inset: seg.endInset });
+  }
+
+  // Deduplicate levels at the same Z (keep last)
+  const uniqueLevels: ZLevel[] = [];
+  for (const level of levels) {
+    if (uniqueLevels.length > 0 && uniqueLevels[uniqueLevels.length - 1]!.z === level.z) {
+      uniqueLevels[uniqueLevels.length - 1] = level;
+    } else {
+      uniqueLevels.push(level);
+    }
+  }
+
+  // Create a thin slab at each Z-level
+  function makeSlab(inset: number, atZ: number): Manifold {
+    let cs: CrossSection;
+    if (inset > 0) {
+      cs = baseCS.offset(-inset, "Round", 2, ROUNDRECT_SEGMENTS);
+      intermediates.push(cs);
+    } else {
+      cs = baseCS;
+    }
+    let slab = cs.extrude(SLAB_THICKNESS);
+    intermediates.push(slab);
+    if (atZ !== 0) {
+      slab = slab.translate(0, 0, atZ);
+      intermediates.push(slab);
+    }
+    return slab;
+  }
+
+  // Hull adjacent pairs and union
+  const parts: Manifold[] = [];
+  for (let i = 0; i < uniqueLevels.length - 1; i++) {
+    const a = uniqueLevels[i]!;
+    const b = uniqueLevels[i + 1]!;
+    const slabA = makeSlab(a.inset, a.z);
+    const slabB = makeSlab(b.inset, b.z);
+    const hull = wasm.Manifold.hull([slabA, slabB]);
+    intermediates.push(hull);
+    parts.push(hull);
+  }
+
+  if (parts.length === 1) {
+    return parts[0]!;
+  }
+
+  const result = wasm.Manifold.union(parts);
+  intermediates.push(result);
+  return result;
 }
 
 // ── Shared Grid Geometry Helpers ─────────────────────────────────────────────

@@ -8,6 +8,14 @@ export const BASEPLATE_RIM_WIDTH = 2.4; // width of the rim/grid walls
 export const BASEPLATE_CORNER_RADIUS = 4.0;
 export const BASEPLATE_SKELETON_RIM_WIDTH = 1.2; // thinner walls for skeleton
 
+// ── Baseplate Socket Profile (female inverse of bin base, per cell) ─────────
+// 3 segments from bottom to top, all chamfers at 45°
+export const SOCKET_CHAMFER_BOTTOM = 0.7; // bottom 45° segment
+export const SOCKET_VERTICAL = 1.8; // middle vertical segment
+export const SOCKET_CHAMFER_TOP = 1.75; // top 45° segment
+export const SOCKET_TOTAL_DEPTH = 2.45; // 0.7 + 1.75 — total horizontal depth
+export const SOCKET_LEDGE = 0.4; // horizontal ledge at top of socket
+
 export type BaseplateStyle = "standard" | "skeleton";
 
 // ── Types ────────────────────────────────────────────────────────────────────

@@ -8,6 +8,30 @@ export const GRIDFINITY_LIP_HEIGHT = 4.4;
 export const GRIDFINITY_CORNER_RADIUS = 3.75;
 export const GRIDFINITY_MAGNET_HOLE_INSET = 8;
 
+// ── Bin Base Profile (chamfered bottom that mates with baseplate socket) ─────
+// 3 segments from bottom to top, all chamfers at 45°
+export const BASE_CHAMFER_1 = 0.8; // bottom 45° segment (height & horizontal)
+export const BASE_VERTICAL = 1.8; // middle vertical segment
+export const BASE_CHAMFER_2 = 2.15; // top 45° segment (height & horizontal)
+export const BASE_TOTAL_INSET = 2.95; // 0.8 + 2.15 — total horizontal depth
+
+// ── Stacking Lip Profile (inverse of base, carved from top of bin) ──────────
+// 3 segments from lip bottom to top, all chamfers at 45°
+export const LIP_CHAMFER_BOTTOM = 0.7; // bottom 45° segment
+export const LIP_VERTICAL = 1.8; // middle vertical segment
+export const LIP_CHAMFER_TOP = 1.9; // top 45° segment
+export const LIP_TOTAL_DEPTH = 2.6; // 0.7 + 1.9 — total horizontal depth
+export const LIP_LEDGE = 0.4; // horizontal ledge at very top of lip
+
+// ── Lip Support ─────────────────────────────────────────────────────────────
+// Below the lip profile, the wall tapers from body wall thickness out to the
+// full lip depth. Support height ≈ lip depth at 45°, plus a min vertical.
+export const LIP_SUPPORT_MIN_HEIGHT = 1.2; // minimum vertical support below taper
+
+// ── Interior ────────────────────────────────────────────────────────────────
+export const INTERIOR_FILLET_RADIUS = 1.85; // floor-to-wall fillet
+export const BRIDGE_THICKNESS = 1.21; // floor connecting base pads to body cavity
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface BinConfig {
