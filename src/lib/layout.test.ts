@@ -6,12 +6,20 @@ import {
   removeItem,
   getPartsList,
   itemsOverlap,
+  updateItemProperties,
+  DEFAULT_BIN_PROPERTIES,
 } from "./layout";
 import type { LayoutState } from "./layout";
 
 // ── Item Creation ────────────────────────────────────────────────────────────
 
 describe("createLayoutItem", () => {
+  it("creates an item with default bin properties", () => {
+    const item = createLayoutItem(0, 0, 2, 1);
+    expect(item.binProperties).toEqual(DEFAULT_BIN_PROPERTIES);
+    expect(item.binProperties.heightUnits).toBe(3);
+  });
+
   it("creates an item with given position and size", () => {
     const item = createLayoutItem(0, 0, 2, 1);
     expect(item.gridX).toBe(0);
@@ -201,6 +209,23 @@ describe("getPartsList", () => {
     expect(parts).toHaveLength(2);
   });
 
+  it("groups by footprint regardless of bin properties", () => {
+    const state: LayoutState = {
+      items: [
+        createLayoutItem(0, 0, 2, 1),
+        createLayoutItem(2, 0, 2, 1),
+      ],
+      gridUnitsX: 9,
+      gridUnitsY: 7,
+    };
+    // Change height on second item
+    const updated = updateItemProperties(state.items[1]!.id, { heightUnits: 5 }, state);
+    const parts = getPartsList(updated);
+    // Still groups as same footprint
+    expect(parts).toHaveLength(1);
+    expect(parts[0]!.quantity).toBe(2);
+  });
+
   it("groups by W × L footprint", () => {
     const state: LayoutState = {
       items: [
@@ -212,5 +237,47 @@ describe("getPartsList", () => {
     };
     const parts = getPartsList(state);
     expect(parts).toHaveLength(2);
+  });
+});
+
+// ── Update Bin Properties ────────────────────────────────────────────────────
+
+describe("updateItemProperties", () => {
+  it("updates height units on a specific item", () => {
+    const item = createLayoutItem(0, 0, 1, 1);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = updateItemProperties(item.id, { heightUnits: 5 }, state);
+    expect(result.items[0]!.binProperties.heightUnits).toBe(5);
+  });
+
+  it("preserves other properties when updating one", () => {
+    const item = createLayoutItem(0, 0, 1, 1);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = updateItemProperties(item.id, { heightUnits: 5 }, state);
+    expect(result.items[0]!.binProperties.includeStackingLip).toBe(true);
+  });
+
+  it("does not modify other items", () => {
+    const a = createLayoutItem(0, 0, 1, 1);
+    const b = createLayoutItem(1, 0, 1, 1);
+    const state: LayoutState = { items: [a, b], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = updateItemProperties(a.id, { heightUnits: 7 }, state);
+    expect(result.items[0]!.binProperties.heightUnits).toBe(7);
+    expect(result.items[1]!.binProperties.heightUnits).toBe(3);
+  });
+
+  it("updates boolean properties", () => {
+    const item = createLayoutItem(0, 0, 1, 1);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = updateItemProperties(item.id, { includeScoop: true }, state);
+    expect(result.items[0]!.binProperties.includeScoop).toBe(true);
+  });
+
+  it("updates divider counts", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = updateItemProperties(item.id, { dividersX: 1, dividersY: 1 }, state);
+    expect(result.items[0]!.binProperties.dividersX).toBe(1);
+    expect(result.items[0]!.binProperties.dividersY).toBe(1);
   });
 });

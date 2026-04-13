@@ -1,11 +1,36 @@
 // ── Types ────────────────────────────────────────────────────────────────────
 
+export interface BinProperties {
+  heightUnits: number;
+  includeStackingLip: boolean;
+  includeMagnetHoles: boolean;
+  includeScrewHoles: boolean;
+  dividersX: number; // number of internal dividers along X (0 = none)
+  dividersY: number; // number of internal dividers along Y (0 = none)
+  includeScoop: boolean; // curved front wall for easy access
+  includeLabelTab: boolean; // angled surface at front for labels
+  includeBottomHoles: boolean; // drainage / weight reduction holes in floor
+}
+
+export const DEFAULT_BIN_PROPERTIES: Readonly<BinProperties> = {
+  heightUnits: 3,
+  includeStackingLip: true,
+  includeMagnetHoles: true,
+  includeScrewHoles: false,
+  dividersX: 0,
+  dividersY: 0,
+  includeScoop: false,
+  includeLabelTab: false,
+  includeBottomHoles: false,
+};
+
 export interface LayoutItem {
   id: string;
   gridX: number;
   gridY: number;
   gridUnitsX: number;
   gridUnitsY: number;
+  binProperties: BinProperties;
 }
 
 export interface LayoutState {
@@ -36,7 +61,25 @@ export function createLayoutItem(
     gridY,
     gridUnitsX,
     gridUnitsY,
+    binProperties: { ...DEFAULT_BIN_PROPERTIES },
   };
+}
+
+// ── Update Bin Properties ────────────────────────────────────────────────────
+
+export function updateItemProperties(
+  id: string,
+  properties: Partial<BinProperties>,
+  state: LayoutState
+): LayoutState {
+  const items = state.items.map((item) => {
+    if (item.id !== id) return item;
+    return {
+      ...item,
+      binProperties: { ...item.binProperties, ...properties },
+    };
+  });
+  return { ...state, items };
 }
 
 // ── Overlap Detection ────────────────────────────────────────────────────────

@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
-import type { LayoutState, PartEntry } from "../lib/layout";
+import type { LayoutState, PartEntry, BinProperties } from "../lib/layout";
 import {
   createLayoutItem,
   addItem,
   removeItem,
   getPartsList,
+  updateItemProperties,
 } from "../lib/layout";
 import { useSpaceConfig } from "./SpaceConfigContext";
 
@@ -19,6 +20,7 @@ interface LayoutContextValue {
     gridUnitsY: number
   ) => void;
   removeLayoutItem: (id: string) => void;
+  updateBinProperties: (id: string, props: Partial<BinProperties>) => void;
   clearLayout: () => void;
   importLayout: (state: LayoutState) => void;
 }
@@ -68,6 +70,13 @@ export function LayoutProvider({
     setLayout((prev) => removeItem(id, prev));
   }, []);
 
+  const updateBinProperties = useCallback(
+    (id: string, props: Partial<BinProperties>) => {
+      setLayout((prev) => updateItemProperties(id, props, prev));
+    },
+    []
+  );
+
   const clearLayout = useCallback(() => {
     setLayout((prev) => ({ ...prev, items: [] }));
   }, []);
@@ -77,8 +86,8 @@ export function LayoutProvider({
   }, []);
 
   const value = useMemo(
-    () => ({ layout, partsList, placeItem, removeLayoutItem, clearLayout, importLayout }),
-    [layout, partsList, placeItem, removeLayoutItem, clearLayout, importLayout]
+    () => ({ layout, partsList, placeItem, removeLayoutItem, updateBinProperties, clearLayout, importLayout }),
+    [layout, partsList, placeItem, removeLayoutItem, updateBinProperties, clearLayout, importLayout]
   );
 
   return (
