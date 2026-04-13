@@ -26,21 +26,14 @@ describe("LayoutPanel — basic render", () => {
     expect(screen.getByText("Layout Planner")).toBeInTheDocument();
   });
 
+  it("renders description text", () => {
+    renderPanel();
+    expect(screen.getByText(/Draw bins on the grid/)).toBeInTheDocument();
+  });
+
   it("renders the grid SVG", () => {
     renderPanel();
     expect(screen.getByTestId("layout-grid")).toBeInTheDocument();
-  });
-
-  it("renders preset buttons", () => {
-    renderPanel();
-    expect(screen.getByTestId("preset-1x1")).toBeInTheDocument();
-    expect(screen.getByTestId("preset-2x1")).toBeInTheDocument();
-    expect(screen.getByTestId("preset-2x2")).toBeInTheDocument();
-  });
-
-  it("renders draw mode button", () => {
-    renderPanel();
-    expect(screen.getByTestId("draw-mode")).toBeInTheDocument();
   });
 
   it("renders undo/redo buttons", () => {
@@ -60,18 +53,18 @@ describe("LayoutPanel — basic render", () => {
   });
 });
 
-describe("LayoutPanel — stamp mode", () => {
-  it("places a 1x1 bin with preset stamp", () => {
+describe("LayoutPanel — draw mode", () => {
+  it("places a 1x1 bin by clicking a cell", () => {
     renderPanel();
-    fireEvent.click(screen.getByTestId("preset-1x1"));
     fireEvent.mouseDown(screen.getByTestId("cell-0-0"));
+    fireEvent.mouseUp(screen.getByTestId("layout-grid"));
     expect(screen.getByTestId("layout-items")).toHaveTextContent("1 bins");
   });
 
   it("marks placed cell as occupied", () => {
     renderPanel();
-    fireEvent.click(screen.getByTestId("preset-1x1"));
     fireEvent.mouseDown(screen.getByTestId("cell-0-0"));
+    fireEvent.mouseUp(screen.getByTestId("layout-grid"));
     expect(screen.getByTestId("cell-0-0")).toHaveAttribute(
       "data-occupied",
       "true"
@@ -80,9 +73,9 @@ describe("LayoutPanel — stamp mode", () => {
 
   it("selects bin when clicking occupied cell", () => {
     renderPanel();
-    fireEvent.click(screen.getByTestId("preset-1x1"));
     fireEvent.mouseDown(screen.getByTestId("cell-0-0"));
-    // Click again to select (not remove)
+    fireEvent.mouseUp(screen.getByTestId("layout-grid"));
+    // Click occupied cell to select
     fireEvent.mouseDown(screen.getByTestId("cell-0-0"));
     expect(screen.getByText(/bin selected/i)).toBeInTheDocument();
   });
@@ -91,24 +84,26 @@ describe("LayoutPanel — stamp mode", () => {
 describe("LayoutPanel — parts list", () => {
   it("shows parts list after placing bins", () => {
     renderPanel();
-    fireEvent.click(screen.getByTestId("preset-1x1"));
     fireEvent.mouseDown(screen.getByTestId("cell-0-0"));
+    fireEvent.mouseUp(screen.getByTestId("layout-grid"));
     fireEvent.mouseDown(screen.getByTestId("cell-1-0"));
+    fireEvent.mouseUp(screen.getByTestId("layout-grid"));
     expect(screen.getByTestId("parts-list")).toBeInTheDocument();
   });
 
   it("shows clear all button when bins are placed", () => {
     renderPanel();
-    fireEvent.click(screen.getByTestId("preset-1x1"));
     fireEvent.mouseDown(screen.getByTestId("cell-0-0"));
+    fireEvent.mouseUp(screen.getByTestId("layout-grid"));
     expect(screen.getByText("Clear All")).toBeInTheDocument();
   });
 
   it("clears all bins on clear all click", () => {
     renderPanel();
-    fireEvent.click(screen.getByTestId("preset-1x1"));
     fireEvent.mouseDown(screen.getByTestId("cell-0-0"));
+    fireEvent.mouseUp(screen.getByTestId("layout-grid"));
     fireEvent.mouseDown(screen.getByTestId("cell-1-0"));
+    fireEvent.mouseUp(screen.getByTestId("layout-grid"));
     fireEvent.click(screen.getByText("Clear All"));
     expect(screen.getByTestId("layout-items")).toHaveTextContent("0 bins");
   });

@@ -5,6 +5,8 @@ import {
   createLayoutItem,
   addItem,
   removeItem,
+  moveItem,
+  resizeItem,
   getPartsList,
   updateItemProperties,
   createHistory,
@@ -28,6 +30,14 @@ interface LayoutContextValue {
     gridUnitsY: number
   ) => void;
   removeLayoutItem: (id: string) => void;
+  moveLayoutItem: (id: string, newGridX: number, newGridY: number) => void;
+  resizeLayoutItem: (
+    id: string,
+    newGridX: number,
+    newGridY: number,
+    newGridUnitsX: number,
+    newGridUnitsY: number
+  ) => void;
   updateBinProperties: (id: string, props: Partial<BinProperties>) => void;
   clearLayout: () => void;
   importLayout: (state: LayoutState) => void;
@@ -104,6 +114,41 @@ export function LayoutProvider({
     setSelectedId((prev) => (prev === id ? null : prev));
   }, []);
 
+  const moveLayoutItem = useCallback(
+    (id: string, newGridX: number, newGridY: number) => {
+      setHistory((prev) => {
+        const newState = moveItem(id, newGridX, newGridY, prev.present);
+        if (newState === prev.present) return prev;
+        return pushHistory(prev, newState);
+      });
+    },
+    []
+  );
+
+  const resizeLayoutItem = useCallback(
+    (
+      id: string,
+      newGridX: number,
+      newGridY: number,
+      newGridUnitsX: number,
+      newGridUnitsY: number
+    ) => {
+      setHistory((prev) => {
+        const newState = resizeItem(
+          id,
+          newGridX,
+          newGridY,
+          newGridUnitsX,
+          newGridUnitsY,
+          prev.present
+        );
+        if (newState === prev.present) return prev;
+        return pushHistory(prev, newState);
+      });
+    },
+    []
+  );
+
   const updateBinProperties = useCallback(
     (id: string, props: Partial<BinProperties>) => {
       pushState(updateItemProperties(id, props, history.present));
@@ -137,6 +182,8 @@ export function LayoutProvider({
       setSelectedId,
       placeItem,
       removeLayoutItem,
+      moveLayoutItem,
+      resizeLayoutItem,
       updateBinProperties,
       clearLayout,
       importLayout,
@@ -151,6 +198,8 @@ export function LayoutProvider({
       selectedId,
       placeItem,
       removeLayoutItem,
+      moveLayoutItem,
+      resizeLayoutItem,
       updateBinProperties,
       clearLayout,
       importLayout,

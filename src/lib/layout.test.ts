@@ -4,6 +4,8 @@ import {
   canPlaceItem,
   addItem,
   removeItem,
+  moveItem,
+  resizeItem,
   getPartsList,
   itemsOverlap,
   updateItemProperties,
@@ -368,5 +370,111 @@ describe("undo/redo history", () => {
     h = pushHistory(h, s3);
     expect(h.future).toHaveLength(0);
     expect(canRedo(h)).toBe(false);
+  });
+});
+
+// ── Move Item ───────────────────────────────────────────────────────────────
+
+describe("moveItem", () => {
+  it("moves an item to a valid position", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = moveItem(item.id, 3, 3, state);
+    expect(result.items[0]!.gridX).toBe(3);
+    expect(result.items[0]!.gridY).toBe(3);
+  });
+
+  it("preserves item dimensions and properties", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = moveItem(item.id, 3, 3, state);
+    expect(result.items[0]!.gridUnitsX).toBe(2);
+    expect(result.items[0]!.gridUnitsY).toBe(2);
+    expect(result.items[0]!.binProperties).toEqual(item.binProperties);
+  });
+
+  it("returns unchanged state if target is out of bounds", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = moveItem(item.id, 8, 0, state);
+    expect(result).toBe(state);
+  });
+
+  it("returns unchanged state if target overlaps another item", () => {
+    const a = createLayoutItem(0, 0, 2, 2);
+    const b = createLayoutItem(4, 0, 2, 2);
+    const state: LayoutState = { items: [a, b], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = moveItem(a.id, 3, 0, state);
+    expect(result).toBe(state);
+  });
+
+  it("returns unchanged state if item not found", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = moveItem("nonexistent", 3, 3, state);
+    expect(result).toBe(state);
+  });
+});
+
+// ── Resize Item ─────────────────────────────────────────────────────────────
+
+describe("resizeItem", () => {
+  it("resizes an item to valid dimensions", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = resizeItem(item.id, 0, 0, 3, 3, state);
+    expect(result.items[0]!.gridUnitsX).toBe(3);
+    expect(result.items[0]!.gridUnitsY).toBe(3);
+  });
+
+  it("preserves position when only resizing", () => {
+    const item = createLayoutItem(1, 1, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = resizeItem(item.id, 1, 1, 4, 2, state);
+    expect(result.items[0]!.gridX).toBe(1);
+    expect(result.items[0]!.gridY).toBe(1);
+  });
+
+  it("returns unchanged state if resize goes out of bounds", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = resizeItem(item.id, 0, 0, 10, 2, state);
+    expect(result).toBe(state);
+  });
+
+  it("returns unchanged state for zero width", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = resizeItem(item.id, 0, 0, 0, 2, state);
+    expect(result).toBe(state);
+  });
+
+  it("returns unchanged state for negative height", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = resizeItem(item.id, 0, 0, 2, -1, state);
+    expect(result).toBe(state);
+  });
+
+  it("returns unchanged state if resize overlaps another item", () => {
+    const a = createLayoutItem(0, 0, 2, 2);
+    const b = createLayoutItem(3, 0, 2, 2);
+    const state: LayoutState = { items: [a, b], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = resizeItem(a.id, 0, 0, 4, 2, state);
+    expect(result).toBe(state);
+  });
+
+  it("returns unchanged state if item not found", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = resizeItem("nonexistent", 0, 0, 3, 3, state);
+    expect(result).toBe(state);
+  });
+
+  it("preserves bin properties after resize", () => {
+    const item = createLayoutItem(0, 0, 2, 2);
+    const state: LayoutState = { items: [item], gridUnitsX: 9, gridUnitsY: 7 };
+    const result = resizeItem(item.id, 0, 0, 3, 3, state);
+    expect(result.items[0]!.binProperties).toEqual(item.binProperties);
   });
 });

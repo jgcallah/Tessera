@@ -122,6 +122,55 @@ export function removeItem(id: string, state: LayoutState): LayoutState {
   return { ...state, items: filtered };
 }
 
+// ── Move Item ───────────────────────────────────────────────────────────────
+
+export function moveItem(
+  id: string,
+  newGridX: number,
+  newGridY: number,
+  state: LayoutState
+): LayoutState {
+  const item = state.items.find((i) => i.id === id);
+  if (!item) return state;
+
+  const moved = { ...item, gridX: newGridX, gridY: newGridY };
+  if (!canPlaceItem(moved, state)) return state;
+
+  return {
+    ...state,
+    items: state.items.map((i) => (i.id === id ? moved : i)),
+  };
+}
+
+// ── Resize Item ─────────────────────────────────────────────────────────────
+
+export function resizeItem(
+  id: string,
+  newGridX: number,
+  newGridY: number,
+  newGridUnitsX: number,
+  newGridUnitsY: number,
+  state: LayoutState
+): LayoutState {
+  const item = state.items.find((i) => i.id === id);
+  if (!item) return state;
+  if (newGridUnitsX < 1 || newGridUnitsY < 1) return state;
+
+  const resized = {
+    ...item,
+    gridX: newGridX,
+    gridY: newGridY,
+    gridUnitsX: newGridUnitsX,
+    gridUnitsY: newGridUnitsY,
+  };
+  if (!canPlaceItem(resized, state)) return state;
+
+  return {
+    ...state,
+    items: state.items.map((i) => (i.id === id ? resized : i)),
+  };
+}
+
 // ── Parts List ───────────────────────────────────────────────────────────────
 
 function partKey(item: LayoutItem): string {
