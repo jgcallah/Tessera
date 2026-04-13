@@ -4,14 +4,10 @@ import { App } from "./App";
 
 vi.mock("@react-three/fiber", () => import("../__mocks__/@react-three/fiber"));
 vi.mock("@react-three/drei", () => import("../__mocks__/@react-three/drei"));
-vi.mock("./BinPreview", () => ({
-  BinPreview: () => <div data-testid="bin-preview" />,
-}));
-vi.mock("./BaseplatePreview", () => ({
-  BaseplatePreview: () => <div data-testid="baseplate-preview" />,
-}));
-vi.mock("./PreviewCanvas", () => ({
-  PreviewCanvas: () => <div data-testid="preview-canvas" />,
+vi.mock("./BinPreview", () => ({ BinPreview: () => null }));
+vi.mock("./BaseplatePreview", () => ({ BaseplatePreview: () => null }));
+vi.mock("./ManifoldDemo", () => ({
+  ManifoldDemo: () => <span>WASM mock</span>,
 }));
 
 describe("App", () => {
@@ -20,62 +16,50 @@ describe("App", () => {
     expect(screen.getByText("Tessera")).toBeInTheDocument();
   });
 
-  it("renders all config panels", () => {
+  it("shows step 1 (Space & Grid) by default", () => {
     render(<App />);
     expect(screen.getByText("Space Definition")).toBeInTheDocument();
     expect(screen.getByText("Grid Configuration")).toBeInTheDocument();
+  });
+
+  it("does not show later step content on load", () => {
+    render(<App />);
+    expect(screen.queryByText("Bin Configuration")).not.toBeInTheDocument();
+    expect(screen.queryByText("Layout Planner")).not.toBeInTheDocument();
+  });
+
+  it("navigates through all 4 steps", () => {
+    render(<App />);
+    // Step 1
+    expect(screen.getByText("Space Definition")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("next-btn"));
+    // Step 2
     expect(screen.getByText("Bin Configuration")).toBeInTheDocument();
-    expect(screen.getByText("Baseplate Configuration")).toBeInTheDocument();
-  });
-
-  it("renders the layout planner", () => {
-    render(<App />);
+    fireEvent.click(screen.getByTestId("next-btn"));
+    // Step 3
     expect(screen.getByText("Layout Planner")).toBeInTheDocument();
-    expect(screen.getByTestId("layout-grid")).toBeInTheDocument();
-  });
-
-  it("renders the print planner", () => {
-    render(<App />);
+    fireEvent.click(screen.getByTestId("next-btn"));
+    // Step 4
     expect(screen.getByText("Print Planner")).toBeInTheDocument();
-  });
-
-  it("renders the export panel", () => {
-    render(<App />);
     expect(screen.getByText("Export")).toBeInTheDocument();
   });
 
-  it("renders the preview mode toggle", () => {
+  it("shows step indicator with all 4 steps", () => {
     render(<App />);
-    expect(
-      screen.getByRole("button", { name: /assembled/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /^bin$/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /baseplate/i })
-    ).toBeInTheDocument();
+    // Step labels appear in both indicator and footer, so use getAllByText
+    expect(screen.getAllByText(/space & grid/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/part design/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/layout/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/print & export/i).length).toBeGreaterThanOrEqual(1);
   });
 
-  it("assembled mode is active by default", () => {
+  it("shows save/load project buttons", () => {
     render(<App />);
-    expect(
-      screen.getByRole("button", { name: /assembled/i })
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("save-project")).toBeInTheDocument();
+    expect(screen.getByTestId("load-project")).toBeInTheDocument();
   });
 
-  it("can switch preview mode to bin", () => {
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /^bin$/i }));
-    expect(
-      screen.getByRole("button", { name: /^bin$/i })
-    ).toHaveAttribute("aria-pressed", "true");
-    expect(
-      screen.getByRole("button", { name: /assembled/i })
-    ).toHaveAttribute("aria-pressed", "false");
-  });
-
-  it("shows gridfinity mode as default", () => {
+  it("shows gridfinity mode as default on step 1", () => {
     render(<App />);
     expect(
       screen.getByRole("button", { name: /gridfinity/i })

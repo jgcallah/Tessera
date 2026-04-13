@@ -21,6 +21,7 @@ interface LayoutContextValue {
   ) => void;
   removeLayoutItem: (id: string) => void;
   clearLayout: () => void;
+  importLayout: (state: LayoutState) => void;
 }
 
 const LayoutContext = createContext<LayoutContextValue | null>(null);
@@ -79,9 +80,13 @@ export function LayoutProvider({
     setLayout((prev) => ({ ...prev, items: [] }));
   }, []);
 
+  const importLayout = useCallback((state: LayoutState) => {
+    setLayout(state);
+  }, []);
+
   const value = useMemo(
-    () => ({ layout, partsList, placeItem, removeLayoutItem, clearLayout }),
-    [layout, partsList, placeItem, removeLayoutItem, clearLayout]
+    () => ({ layout, partsList, placeItem, removeLayoutItem, clearLayout, importLayout }),
+    [layout, partsList, placeItem, removeLayoutItem, clearLayout, importLayout]
   );
 
   return (
