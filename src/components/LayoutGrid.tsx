@@ -2,27 +2,12 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useLayout } from "./LayoutContext";
 import { canPlaceItem, createLayoutItem } from "../lib/layout";
 import type { LayoutItem } from "../lib/layout";
+import { getBinColor } from "../lib/bin-colors";
 
 const GAP = 1;
 const MIN_CELL_SIZE = 24;
 const MAX_CELL_SIZE = 64;
 const HANDLE_SIZE = 8;
-
-// Color palette for different footprint sizes
-const SIZE_COLORS: Record<string, string> = {
-  "1x1": "#6d28d9", // violet-700
-  "2x1": "#2563eb", // blue-600
-  "1x2": "#0891b2", // cyan-600
-  "2x2": "#059669", // emerald-600
-  "3x1": "#d97706", // amber-600
-  "1x3": "#dc2626", // red-600
-};
-const DEFAULT_COLOR = "#7c3aed"; // violet-600
-
-function getBinColor(item: LayoutItem): string {
-  const key = `${item.gridUnitsX}x${item.gridUnitsY}`;
-  return SIZE_COLORS[key] ?? DEFAULT_COLOR;
-}
 
 type ResizeHandle =
   | "top"
@@ -66,6 +51,7 @@ type Interaction =
       offsetY: number;
       currentX: number;
       currentY: number;
+      wasSelected: boolean;
     }
   | {
       type: "resizing";
@@ -288,20 +274,19 @@ export function LayoutGrid({
     const itemId = occupied.get(`${gx},${gy}`);
 
     if (itemId) {
-      if (itemId === selectedId) {
-        const item = layout.items.find((i) => i.id === itemId);
-        if (item) {
-          setInteraction({
-            type: "moving",
-            itemId,
-            offsetX: gx - item.gridX,
-            offsetY: gy - item.gridY,
-            currentX: gx,
-            currentY: gy,
-          });
-        }
-      } else {
+      const item = layout.items.find((i) => i.id === itemId);
+      if (item) {
+        const wasSelected = itemId === selectedId;
         setSelectedId(itemId);
+        setInteraction({
+          type: "moving",
+          itemId,
+          offsetX: gx - item.gridX,
+          offsetY: gy - item.gridY,
+          currentX: gx,
+          currentY: gy,
+          wasSelected,
+        });
       }
       return;
     }
@@ -367,7 +352,8 @@ export function LayoutGrid({
         moveLayoutItem(interaction.itemId, movePreview.x, movePreview.y);
       } else if (
         item?.gridX === movePreview.x &&
-        item?.gridY === movePreview.y
+        item?.gridY === movePreview.y &&
+        interaction.wasSelected
       ) {
         setSelectedId(null);
       }
@@ -521,7 +507,7 @@ export function LayoutGrid({
           const isHighlighted =
             highlightFootprint ===
             `${item.gridUnitsX}x${item.gridUnitsY}`;
-          const color = getBinColor(item);
+          const color = getBinColor(item.gridUnitsX, item.gridUnitsY);
 
           return (
             <g key={`bin-${item.id}`}>
@@ -696,6 +682,49 @@ export function LayoutGrid({
             data-testid={`handle-${handle}`}
           />
         ))}
+
+        {/* Delete button — rendered last so it's always on top */}
+        {selectedItem && !interaction && (
+          <g
+            className="cursor-pointer"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              removeLayoutItem(selectedItem.id);
+            }}
+          >
+            <circle
+              cx={
+                cellPx(selectedItem.gridX) +
+                selectedItem.gridUnitsX * (cellSize + GAP) -
+                GAP +
+                HANDLE_SIZE +
+                2
+              }
+              cy={cellPx(selectedItem.gridY) - HANDLE_SIZE - 2}
+              r={HANDLE_SIZE}
+              fill="#dc2626"
+              stroke="#991b1b"
+              strokeWidth={1}
+            />
+            <text
+              x={
+                cellPx(selectedItem.gridX) +
+                selectedItem.gridUnitsX * (cellSize + GAP) -
+                GAP +
+                HANDLE_SIZE +
+                2
+              }
+              y={cellPx(selectedItem.gridY) - HANDLE_SIZE - 2.5}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={HANDLE_SIZE}
+              fontWeight="bold"
+              className="select-none fill-white"
+            >
+              ✕
+            </text>
+          </g>
+        )}
       </svg>
     </div>
   );
