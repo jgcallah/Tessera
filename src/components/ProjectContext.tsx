@@ -13,7 +13,7 @@ import {
   downloadProjectFile,
 } from "../lib/project";
 import type { ProjectData } from "../lib/project";
-import { saveProject } from "../lib/project-storage";
+import { saveProject as saveProjectToStorage } from "../lib/project-storage";
 import { useGridConfig } from "./GridConfigContext";
 import { useSpaceConfig } from "./SpaceConfigContext";
 import { useBinConfig } from "./BinConfigContext";
@@ -28,6 +28,7 @@ interface ProjectContextValue {
   importError: string | null;
   clearImportError: () => void;
   saveToLocal: () => void;
+  renameProject: (newName: string) => void;
 }
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
@@ -52,7 +53,7 @@ export function ProjectProvider({
   const { baseplateConfig, updateBaseplateConfig } = useBaseplateConfig();
   const { layout, importLayout } = useLayout();
 
-  const [projectName] = useState(initialName);
+  const [projectName, setProjectName] = useState(initialName);
   const [projectId, setProjectId] = useState<string | undefined>(initialId);
   const [importError, setImportError] = useState<string | null>(null);
 
@@ -78,7 +79,7 @@ export function ProjectProvider({
 
   const saveToLocal = useCallback(() => {
     const data = gatherProjectData();
-    const id = saveProject(projectName, data, projectId);
+    const id = saveProjectToStorage(projectName, data, projectId);
     setProjectId(id);
   }, [gatherProjectData, projectName, projectId]);
 
@@ -86,7 +87,7 @@ export function ProjectProvider({
   useEffect(() => {
     const timer = setTimeout(() => {
       const data = gatherProjectData();
-      const id = saveProject(projectName, data, projectId);
+      const id = saveProjectToStorage(projectName, data, projectId);
       if (!projectId) {
         setProjectId(id);
       }
@@ -130,6 +131,18 @@ export function ProjectProvider({
     setImportError(null);
   }, []);
 
+  const renameProjectFn = useCallback(
+    (newName: string) => {
+      setProjectName(newName);
+      // Update in localStorage immediately
+      if (projectId) {
+        const data = gatherProjectData();
+        saveProjectToStorage(newName, data, projectId);
+      }
+    },
+    [projectId, gatherProjectData]
+  );
+
   const value = useMemo(
     () => ({
       projectName,
@@ -139,6 +152,7 @@ export function ProjectProvider({
       importError,
       clearImportError,
       saveToLocal,
+      renameProject: renameProjectFn,
     }),
     [
       projectName,
@@ -148,6 +162,7 @@ export function ProjectProvider({
       importError,
       clearImportError,
       saveToLocal,
+      renameProjectFn,
     ]
   );
 

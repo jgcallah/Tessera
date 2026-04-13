@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useWizard } from "./WizardContext";
 import { useProject } from "./ProjectContext";
 import { StepIndicator } from "./StepIndicator";
@@ -19,7 +19,9 @@ export function WizardShell({
   onBackToStart,
 }: WizardShellProps): React.JSX.Element {
   const { currentStep, goNext, goPrev, canGoNext, canGoPrev } = useWizard();
-  const { projectName } = useProject();
+  const { projectName, renameProject } = useProject();
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(projectName);
 
   return (
     <div className="flex h-screen flex-col bg-zinc-900 text-zinc-100">
@@ -39,7 +41,47 @@ export function WizardShell({
             ) : (
               <h1 className="text-xl font-bold tracking-tight">Tessera</h1>
             )}
-            <span className="text-sm text-zinc-500">{projectName}</span>
+            {editingName ? (
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => {
+                  setNameInput(e.target.value);
+                }}
+                onBlur={() => {
+                  if (nameInput.trim()) {
+                    renameProject(nameInput.trim());
+                  } else {
+                    setNameInput(projectName);
+                  }
+                  setEditingName(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  } else if (e.key === "Escape") {
+                    setNameInput(projectName);
+                    setEditingName(false);
+                  }
+                }}
+                autoFocus
+                className="rounded border border-zinc-600 bg-zinc-800 px-2 py-0.5 text-sm text-zinc-100 focus:border-violet-500 focus:outline-none"
+                data-testid="project-name-input"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setNameInput(projectName);
+                  setEditingName(true);
+                }}
+                className="rounded px-2 py-0.5 text-sm text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+                data-testid="project-name"
+                title="Click to rename"
+              >
+                {projectName}
+              </button>
+            )}
             <StepIndicator />
           </div>
           <div className="flex items-center gap-4">
