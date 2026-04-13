@@ -1,18 +1,26 @@
 import { createContext, useContext, useState, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
-import type { LayoutState, PartEntry, BinProperties } from "../lib/layout";
+import type { LayoutState, PartEntry, BinProperties, LayoutHistory } from "../lib/layout";
 import {
   createLayoutItem,
   addItem,
   removeItem,
   getPartsList,
   updateItemProperties,
+  createHistory,
+  pushHistory,
+  undo as undoHistory,
+  redo as redoHistory,
+  canUndo as canUndoHistory,
+  canRedo as canRedoHistory,
 } from "../lib/layout";
 import { useSpaceConfig } from "./SpaceConfigContext";
 
 interface LayoutContextValue {
   layout: LayoutState;
   partsList: PartEntry[];
+  selectedId: string | null;
+  setSelectedId: (id: string | null) => void;
   placeItem: (
     gridX: number,
     gridY: number,
@@ -23,6 +31,10 @@ interface LayoutContextValue {
   updateBinProperties: (id: string, props: Partial<BinProperties>) => void;
   clearLayout: () => void;
   importLayout: (state: LayoutState) => void;
+  undoLayout: () => void;
+  redoLayout: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const LayoutContext = createContext<LayoutContextValue | null>(null);
@@ -36,22 +48,35 @@ export function LayoutProvider({
 }: LayoutProviderProps): React.JSX.Element {
   const { gridFit } = useSpaceConfig();
 
-  const [layout, setLayout] = useState<LayoutState>(() => ({
-    items: [],
-    gridUnitsX: gridFit.unitsX,
-    gridUnitsY: gridFit.unitsY,
-  }));
+  const [history, setHistory] = useState<LayoutHistory>(() =>
+    createHistory({
+      items: [],
+      gridUnitsX: gridFit.unitsX,
+      gridUnitsY: gridFit.unitsY,
+    })
+  );
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const layout = history.present;
 
   // Update grid dimensions when space/grid config changes
   useMemo(() => {
-    setLayout((prev) => ({
+    setHistory((prev) => ({
       ...prev,
-      gridUnitsX: gridFit.unitsX,
-      gridUnitsY: gridFit.unitsY,
+      present: {
+        ...prev.present,
+        gridUnitsX: gridFit.unitsX,
+        gridUnitsY: gridFit.unitsY,
+      },
     }));
   }, [gridFit.unitsX, gridFit.unitsY]);
 
   const partsList = useMemo(() => getPartsList(layout), [layout]);
+
+  const pushState = useCallback((newState: LayoutState) => {
+    setHistory((prev) => pushHistory(prev, newState));
+  }, []);
 
   const placeItem = useCallback(
     (
@@ -61,33 +86,78 @@ export function LayoutProvider({
       gridUnitsY: number
     ) => {
       const item = createLayoutItem(gridX, gridY, gridUnitsX, gridUnitsY);
-      setLayout((prev) => addItem(item, prev));
+      setHistory((prev) => {
+        const newState = addItem(item, prev.present);
+        if (newState === prev.present) return prev; // placement failed
+        return pushHistory(prev, newState);
+      });
     },
     []
   );
 
   const removeLayoutItem = useCallback((id: string) => {
-    setLayout((prev) => removeItem(id, prev));
+    setHistory((prev) => {
+      const newState = removeItem(id, prev.present);
+      if (newState === prev.present) return prev;
+      return pushHistory(prev, newState);
+    });
+    setSelectedId((prev) => (prev === id ? null : prev));
   }, []);
 
   const updateBinProperties = useCallback(
     (id: string, props: Partial<BinProperties>) => {
-      setLayout((prev) => updateItemProperties(id, props, prev));
+      pushState(updateItemProperties(id, props, history.present));
     },
-    []
+    [pushState, history.present]
   );
 
   const clearLayout = useCallback(() => {
-    setLayout((prev) => ({ ...prev, items: [] }));
-  }, []);
+    pushState({ ...history.present, items: [] });
+    setSelectedId(null);
+  }, [pushState, history.present]);
 
   const importLayout = useCallback((state: LayoutState) => {
-    setLayout(state);
+    setHistory(createHistory(state));
+    setSelectedId(null);
+  }, []);
+
+  const undoLayout = useCallback(() => {
+    setHistory((prev) => undoHistory(prev));
+  }, []);
+
+  const redoLayout = useCallback(() => {
+    setHistory((prev) => redoHistory(prev));
   }, []);
 
   const value = useMemo(
-    () => ({ layout, partsList, placeItem, removeLayoutItem, updateBinProperties, clearLayout, importLayout }),
-    [layout, partsList, placeItem, removeLayoutItem, updateBinProperties, clearLayout, importLayout]
+    () => ({
+      layout,
+      partsList,
+      selectedId,
+      setSelectedId,
+      placeItem,
+      removeLayoutItem,
+      updateBinProperties,
+      clearLayout,
+      importLayout,
+      undoLayout,
+      redoLayout,
+      canUndo: canUndoHistory(history),
+      canRedo: canRedoHistory(history),
+    }),
+    [
+      layout,
+      partsList,
+      selectedId,
+      placeItem,
+      removeLayoutItem,
+      updateBinProperties,
+      clearLayout,
+      importLayout,
+      undoLayout,
+      redoLayout,
+      history,
+    ]
   );
 
   return (

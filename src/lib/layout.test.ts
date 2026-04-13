@@ -8,6 +8,12 @@ import {
   itemsOverlap,
   updateItemProperties,
   DEFAULT_BIN_PROPERTIES,
+  createHistory,
+  pushHistory,
+  undo,
+  redo,
+  canUndo,
+  canRedo,
 } from "./layout";
 import type { LayoutState } from "./layout";
 
@@ -279,5 +285,88 @@ describe("updateItemProperties", () => {
     const result = updateItemProperties(item.id, { dividersX: 1, dividersY: 1 }, state);
     expect(result.items[0]!.binProperties.dividersX).toBe(1);
     expect(result.items[0]!.binProperties.dividersY).toBe(1);
+  });
+});
+
+// ── Undo / Redo History ──────────────────────────────────────────────────────
+
+describe("undo/redo history", () => {
+  it("createHistory starts with empty past and future", () => {
+    const state: LayoutState = { items: [], gridUnitsX: 9, gridUnitsY: 7 };
+    const history = createHistory(state);
+    expect(history.past).toHaveLength(0);
+    expect(history.future).toHaveLength(0);
+    expect(history.present).toBe(state);
+  });
+
+  it("pushHistory adds current to past and clears future", () => {
+    const s1: LayoutState = { items: [], gridUnitsX: 9, gridUnitsY: 7 };
+    const s2: LayoutState = { items: [createLayoutItem(0, 0, 1, 1)], gridUnitsX: 9, gridUnitsY: 7 };
+    let h = createHistory(s1);
+    h = pushHistory(h, s2);
+    expect(h.past).toHaveLength(1);
+    expect(h.present).toBe(s2);
+    expect(h.future).toHaveLength(0);
+  });
+
+  it("undo restores previous state", () => {
+    const s1: LayoutState = { items: [], gridUnitsX: 9, gridUnitsY: 7 };
+    const s2: LayoutState = { items: [createLayoutItem(0, 0, 1, 1)], gridUnitsX: 9, gridUnitsY: 7 };
+    let h = createHistory(s1);
+    h = pushHistory(h, s2);
+    h = undo(h);
+    expect(h.present.items).toHaveLength(0);
+    expect(h.future).toHaveLength(1);
+  });
+
+  it("redo restores next state", () => {
+    const s1: LayoutState = { items: [], gridUnitsX: 9, gridUnitsY: 7 };
+    const s2: LayoutState = { items: [createLayoutItem(0, 0, 1, 1)], gridUnitsX: 9, gridUnitsY: 7 };
+    let h = createHistory(s1);
+    h = pushHistory(h, s2);
+    h = undo(h);
+    h = redo(h);
+    expect(h.present.items).toHaveLength(1);
+    expect(h.future).toHaveLength(0);
+  });
+
+  it("undo on empty past is a no-op", () => {
+    const state: LayoutState = { items: [], gridUnitsX: 9, gridUnitsY: 7 };
+    const h = createHistory(state);
+    const result = undo(h);
+    expect(result).toBe(h);
+  });
+
+  it("redo on empty future is a no-op", () => {
+    const state: LayoutState = { items: [], gridUnitsX: 9, gridUnitsY: 7 };
+    const h = createHistory(state);
+    const result = redo(h);
+    expect(result).toBe(h);
+  });
+
+  it("canUndo/canRedo reflect state", () => {
+    const s1: LayoutState = { items: [], gridUnitsX: 9, gridUnitsY: 7 };
+    const s2: LayoutState = { items: [createLayoutItem(0, 0, 1, 1)], gridUnitsX: 9, gridUnitsY: 7 };
+    let h = createHistory(s1);
+    expect(canUndo(h)).toBe(false);
+    expect(canRedo(h)).toBe(false);
+    h = pushHistory(h, s2);
+    expect(canUndo(h)).toBe(true);
+    expect(canRedo(h)).toBe(false);
+    h = undo(h);
+    expect(canUndo(h)).toBe(false);
+    expect(canRedo(h)).toBe(true);
+  });
+
+  it("pushHistory clears future (new action after undo)", () => {
+    const s1: LayoutState = { items: [], gridUnitsX: 9, gridUnitsY: 7 };
+    const s2: LayoutState = { items: [createLayoutItem(0, 0, 1, 1)], gridUnitsX: 9, gridUnitsY: 7 };
+    const s3: LayoutState = { items: [createLayoutItem(1, 0, 1, 1)], gridUnitsX: 9, gridUnitsY: 7 };
+    let h = createHistory(s1);
+    h = pushHistory(h, s2);
+    h = undo(h);
+    h = pushHistory(h, s3);
+    expect(h.future).toHaveLength(0);
+    expect(canRedo(h)).toBe(false);
   });
 });

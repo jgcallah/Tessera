@@ -147,3 +147,53 @@ export function getPartsList(state: LayoutState): PartEntry[] {
 
   return [...map.values()];
 }
+
+// ── Undo / Redo History ──────────────────────────────────────────────────────
+
+const MAX_HISTORY = 50;
+
+export interface LayoutHistory {
+  past: LayoutState[];
+  present: LayoutState;
+  future: LayoutState[];
+}
+
+export function createHistory(initial: LayoutState): LayoutHistory {
+  return { past: [], present: initial, future: [] };
+}
+
+export function pushHistory(
+  history: LayoutHistory,
+  newState: LayoutState
+): LayoutHistory {
+  const past = [...history.past, history.present].slice(-MAX_HISTORY);
+  return { past, present: newState, future: [] };
+}
+
+export function undo(history: LayoutHistory): LayoutHistory {
+  if (history.past.length === 0) return history;
+  const previous = history.past[history.past.length - 1]!;
+  return {
+    past: history.past.slice(0, -1),
+    present: previous,
+    future: [history.present, ...history.future],
+  };
+}
+
+export function redo(history: LayoutHistory): LayoutHistory {
+  if (history.future.length === 0) return history;
+  const next = history.future[0]!;
+  return {
+    past: [...history.past, history.present],
+    present: next,
+    future: history.future.slice(1),
+  };
+}
+
+export function canUndo(history: LayoutHistory): boolean {
+  return history.past.length > 0;
+}
+
+export function canRedo(history: LayoutHistory): boolean {
+  return history.future.length > 0;
+}
