@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { WizardProvider } from "./WizardContext";
 import { GridConfigProvider } from "./GridConfigContext";
 import { SpaceConfigProvider } from "./SpaceConfigContext";
+
+vi.mock("./ui/Toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
 import { LayoutProvider } from "./LayoutContext";
 import { StepIndicator } from "./StepIndicator";
 

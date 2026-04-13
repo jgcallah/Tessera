@@ -41,7 +41,7 @@ export function ProjectPanel(): React.JSX.Element {
         className="rounded bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-600"
         data-testid="save-project"
       >
-        Save Project
+        Export Project
       </button>
       <button
         type="button"
@@ -51,7 +51,7 @@ export function ProjectPanel(): React.JSX.Element {
         className="rounded bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-600"
         data-testid="load-project"
       >
-        Load Project
+        Import Project
       </button>
       <input
         ref={fileInputRef}

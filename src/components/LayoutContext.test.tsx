@@ -4,6 +4,10 @@ import { LayoutProvider, useLayout } from "./LayoutContext";
 import { GridConfigProvider } from "./GridConfigContext";
 import { SpaceConfigProvider } from "./SpaceConfigContext";
 
+vi.mock("./ui/Toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
+
 vi.mock("@react-three/fiber", () => import("../__mocks__/@react-three/fiber"));
 vi.mock("@react-three/drei", () => import("../__mocks__/@react-three/drei"));
 

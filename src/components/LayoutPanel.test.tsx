@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { GridConfigProvider } from "./GridConfigContext";
 import { SpaceConfigProvider } from "./SpaceConfigContext";
 import { LayoutProvider } from "./LayoutContext";
+
+vi.mock("./ui/Toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
 import { LayoutPanel } from "./LayoutPanel";
 
 vi.mock("@react-three/fiber", () => import("../__mocks__/@react-three/fiber"));

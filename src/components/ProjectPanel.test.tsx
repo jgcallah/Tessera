@@ -33,17 +33,17 @@ function renderPanel() {
 }
 
 describe("ProjectPanel", () => {
-  it("renders Save button", () => {
+  it("renders Export button", () => {
     renderPanel();
     expect(screen.getByTestId("save-project")).toHaveTextContent(
-      /save project/i
+      /export project/i
     );
   });
 
-  it("renders Load button", () => {
+  it("renders Import button", () => {
     renderPanel();
     expect(screen.getByTestId("load-project")).toHaveTextContent(
-      /load project/i
+      /import project/i
     );
   });
 
