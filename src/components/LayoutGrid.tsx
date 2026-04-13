@@ -133,7 +133,7 @@ export function LayoutGrid({
       );
     });
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); };
   }, [layout.gridUnitsX, layout.gridUnitsY]);
 
   const svgWidth = layout.gridUnitsX * (cellSize + GAP) + GAP;
@@ -366,9 +366,8 @@ export function LayoutGrid({
       ) {
         moveLayoutItem(interaction.itemId, movePreview.x, movePreview.y);
       } else if (
-        item &&
-        movePreview.x === item.gridX &&
-        movePreview.y === item.gridY
+        item?.gridX === movePreview.x &&
+        item?.gridY === movePreview.y
       ) {
         setSelectedId(null);
       }
