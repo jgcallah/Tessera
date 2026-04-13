@@ -3,6 +3,10 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import { GridConfigProvider } from "../GridConfigContext";
 import { SpaceConfigProvider } from "../SpaceConfigContext";
 import { LayoutProvider, useLayout } from "../LayoutContext";
+
+vi.mock("../ui/Toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
 import { BinEditorStep } from "./BinEditorStep";
 
 vi.mock("@react-three/fiber", () => import("../../__mocks__/@react-three/fiber"));
@@ -68,23 +72,23 @@ describe("BinEditorStep — empty state", () => {
 });
 
 describe("BinEditorStep — with bins", () => {
-  it("shows bin list after placing", () => {
+  it("shows select all button after placing bins", () => {
     renderWithBins();
     act(() => {
       screen.getByTestId("place-bin").click();
     });
-    expect(screen.getByTestId("bin-list")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /select all/i })
+    ).toBeInTheDocument();
   });
 
-  it("shows properties panel when bin is selected", () => {
+  it("shows properties panel when bin is selected via Select All", () => {
     renderWithBins();
     act(() => {
       screen.getByTestId("place-bin").click();
     });
-    // Click the bin in the list
-    const binButton = screen.getByTestId("bin-list").querySelector("button")!;
-    fireEvent.click(binButton);
-    expect(screen.getByTestId("bin-properties")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /select all/i }));
+    expect(document.getElementById("bin-height")).toBeInTheDocument();
   });
 
   it("can change height units", () => {
@@ -92,11 +96,20 @@ describe("BinEditorStep — with bins", () => {
     act(() => {
       screen.getByTestId("place-bin").click();
     });
-    const binButton = screen.getByTestId("bin-list").querySelector("button")!;
-    fireEvent.click(binButton);
+    fireEvent.click(screen.getByRole("button", { name: /select all/i }));
     const input = document.getElementById("bin-height") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "5" } });
     expect(input).toHaveValue(5);
+  });
+
+  it("shows mm dimension next to height", () => {
+    renderWithBins();
+    act(() => {
+      screen.getByTestId("place-bin").click();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /select all/i }));
+    // Default 3 height units * 7mm = 21mm
+    expect(screen.getByText(/= 21mm total/i)).toBeInTheDocument();
   });
 
   it("can toggle stacking lip", () => {
@@ -104,9 +117,10 @@ describe("BinEditorStep — with bins", () => {
     act(() => {
       screen.getByTestId("place-bin").click();
     });
-    const binButton = screen.getByTestId("bin-list").querySelector("button")!;
-    fireEvent.click(binButton);
-    const lipCheckbox = screen.getByLabelText(/stacking lip/i);
+    fireEvent.click(screen.getByRole("button", { name: /select all/i }));
+    const lipCheckbox = screen.getByLabelText(
+      /stacking lip/i
+    ) as HTMLInputElement;
     expect(lipCheckbox).toBeChecked();
     fireEvent.click(lipCheckbox);
     expect(lipCheckbox).not.toBeChecked();
@@ -117,15 +131,24 @@ describe("BinEditorStep — with bins", () => {
     act(() => {
       screen.getByTestId("place-bin").click();
     });
-    const binButton = screen.getByTestId("bin-list").querySelector("button")!;
-    fireEvent.click(binButton);
+    fireEvent.click(screen.getByRole("button", { name: /select all/i }));
     fireEvent.change(screen.getByLabelText(/along width/i), {
       target: { value: "1" },
     });
     expect(screen.getByText(/2 compartments/i)).toBeInTheDocument();
   });
 
-  it("shows multiple bins in list", () => {
+  it("shows placeholder message when no bin selected", () => {
+    renderWithBins();
+    act(() => {
+      screen.getByTestId("place-bin").click();
+    });
+    expect(
+      screen.getByText(/select a bin on the grid/i)
+    ).toBeInTheDocument();
+  });
+
+  it("shows multi-select header when multiple bins selected", () => {
     renderWithBins();
     act(() => {
       screen.getByTestId("place-bin").click();
@@ -133,7 +156,31 @@ describe("BinEditorStep — with bins", () => {
     act(() => {
       screen.getByTestId("place-bin-2").click();
     });
-    const buttons = screen.getByTestId("bin-list").querySelectorAll("button");
-    expect(buttons).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: /select all/i }));
+    expect(screen.getByText(/2 bins selected/i)).toBeInTheDocument();
+  });
+
+  it("shows 3D preview placeholder when no bin selected", () => {
+    renderWithBins();
+    act(() => {
+      screen.getByTestId("place-bin").click();
+    });
+    expect(
+      screen.getByText(/select a bin to preview/i)
+    ).toBeInTheDocument();
+  });
+
+  it("shows single-select message when multiple bins selected", () => {
+    renderWithBins();
+    act(() => {
+      screen.getByTestId("place-bin").click();
+    });
+    act(() => {
+      screen.getByTestId("place-bin-2").click();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /select all/i }));
+    expect(
+      screen.getByText(/select a single bin to preview/i)
+    ).toBeInTheDocument();
   });
 });

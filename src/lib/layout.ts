@@ -1,3 +1,5 @@
+import type { BinConfig } from "./bin-config";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface BinProperties {
@@ -245,4 +247,18 @@ export function canUndo(history: LayoutHistory): boolean {
 
 export function canRedo(history: LayoutHistory): boolean {
   return history.future.length > 0;
+}
+
+// ── Conversion Helpers ──────────────────────────────────────────────────────
+
+export function layoutItemToBinConfig(item: LayoutItem): BinConfig {
+  return {
+    gridUnitsX: item.gridUnitsX,
+    gridUnitsY: item.gridUnitsY,
+    heightUnits: item.binProperties.heightUnits,
+    wallThickness: 1.2,
+    includeStackingLip: item.binProperties.includeStackingLip,
+    includeMagnetHoles: item.binProperties.includeMagnetHoles,
+    includeScrewHoles: item.binProperties.includeScrewHoles,
+  };
 }
