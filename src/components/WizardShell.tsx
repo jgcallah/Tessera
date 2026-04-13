@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useWizard } from "./WizardContext";
 import { useProject } from "./ProjectContext";
 import { StepIndicator } from "./StepIndicator";
@@ -18,10 +18,29 @@ interface WizardShellProps {
 export function WizardShell({
   onBackToStart,
 }: WizardShellProps): React.JSX.Element {
-  const { currentStep, goNext, goPrev, canGoNext, canGoPrev } = useWizard();
+  const { currentStep, currentIndex, goNext, goPrev, canGoNext, canGoPrev } = useWizard();
   const { projectName, renameProject } = useProject();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(projectName);
+
+  // Keyboard shortcuts for step navigation
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (editingName) return; // don't navigate while editing name
+      if ((e.ctrlKey || e.metaKey) && e.key === "ArrowRight" && canGoNext) {
+        e.preventDefault();
+        goNext();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "ArrowLeft" && canGoPrev) {
+        e.preventDefault();
+        goPrev();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [editingName, canGoNext, canGoPrev, goNext, goPrev]);
 
   return (
     <div className="flex h-screen flex-col bg-zinc-900 text-zinc-100">
@@ -118,8 +137,8 @@ export function WizardShell({
           >
             Previous
           </button>
-          <span className="text-sm text-zinc-500">
-            {STEP_LABELS[currentStep]}
+          <span className="text-xs text-zinc-500">
+            Step {currentIndex + 1} of {5} — {STEP_LABELS[currentStep]}
           </span>
           <button
             type="button"
