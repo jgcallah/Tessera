@@ -29,16 +29,15 @@ export function PrintPlanPanel(): React.JSX.Element {
         createBinConfig({
           gridUnitsX: part.gridUnitsX,
           gridUnitsY: part.gridUnitsY,
-          heightUnits: part.heightUnits,
         }),
         gridConfig
       );
       return {
-        id: `${part.gridUnitsX}x${part.gridUnitsY}x${part.heightUnits}`,
+        id: `${part.gridUnitsX}x${part.gridUnitsY}`,
         width: dims.exteriorWidth,
         length: dims.exteriorLength,
         quantity: part.quantity,
-        label: `Bin ${part.gridUnitsX}×${part.gridUnitsY}×${part.heightUnits}u`,
+        label: `Bin ${part.gridUnitsX}×${part.gridUnitsY}`,
       };
     });
   }, [partsList, gridConfig]);

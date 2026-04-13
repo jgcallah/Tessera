@@ -16,8 +16,7 @@ interface LayoutContextValue {
     gridX: number,
     gridY: number,
     gridUnitsX: number,
-    gridUnitsY: number,
-    heightUnits: number
+    gridUnitsY: number
   ) => void;
   removeLayoutItem: (id: string) => void;
   clearLayout: () => void;
@@ -57,16 +56,9 @@ export function LayoutProvider({
       gridX: number,
       gridY: number,
       gridUnitsX: number,
-      gridUnitsY: number,
-      heightUnits: number
+      gridUnitsY: number
     ) => {
-      const item = createLayoutItem(
-        gridX,
-        gridY,
-        gridUnitsX,
-        gridUnitsY,
-        heightUnits
-      );
+      const item = createLayoutItem(gridX, gridY, gridUnitsX, gridUnitsY);
       setLayout((prev) => addItem(item, prev));
     },
     []

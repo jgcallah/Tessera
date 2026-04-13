@@ -31,11 +31,10 @@ describe("LayoutPanel — basic render", () => {
     expect(screen.getByTestId("layout-grid")).toBeInTheDocument();
   });
 
-  it("renders brush controls", () => {
+  it("renders brush controls (footprint only)", () => {
     renderPanel();
     expect(screen.getByLabelText("W")).toHaveValue(1);
     expect(screen.getByLabelText("L")).toHaveValue(1);
-    expect(screen.getByLabelText("H")).toHaveValue(3);
   });
 
   it("shows 0 bins initially", () => {

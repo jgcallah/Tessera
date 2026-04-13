@@ -39,19 +39,19 @@ function LayoutActions() {
       <button
         data-testid="place-1x1"
         onClick={() => {
-          placeItem(0, 0, 1, 1, 3);
+          placeItem(0, 0, 1, 1);
         }}
       />
       <button
         data-testid="place-2x1"
         onClick={() => {
-          placeItem(1, 0, 2, 1, 3);
+          placeItem(1, 0, 2, 1);
         }}
       />
       <button
         data-testid="place-overlap"
         onClick={() => {
-          placeItem(0, 0, 1, 1, 5);
+          placeItem(0, 0, 1, 1);
         }}
       />
       <button

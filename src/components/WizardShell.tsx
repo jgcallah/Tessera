@@ -5,8 +5,9 @@ import { StepIndicator } from "./StepIndicator";
 import { ProjectPanel } from "./ProjectPanel";
 import { ManifoldDemo } from "./ManifoldDemo";
 import { SpaceGridStep } from "./steps/SpaceGridStep";
-import { PartDesignStep } from "./steps/PartDesignStep";
 import { LayoutStep } from "./steps/LayoutStep";
+import { BinEditorStep } from "./steps/BinEditorStep";
+import { BaseplateEditorStep } from "./steps/BaseplateEditorStep";
 import { PrintExportStep } from "./steps/PrintExportStep";
 import { STEP_LABELS } from "../lib/wizard";
 
@@ -57,8 +58,9 @@ export function WizardShell({
       {/* Step Content */}
       <main className="min-h-0 flex-1 p-6">
         {currentStep === "space-grid" && <SpaceGridStep />}
-        {currentStep === "part-design" && <PartDesignStep />}
         {currentStep === "layout" && <LayoutStep />}
+        {currentStep === "bin-editor" && <BinEditorStep />}
+        {currentStep === "baseplate-editor" && <BaseplateEditorStep />}
         {currentStep === "print-export" && <PrintExportStep />}
       </main>
 

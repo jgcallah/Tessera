@@ -54,7 +54,7 @@ describe("WizardShell", () => {
 
   it("does not show step 2 content by default", () => {
     renderShell();
-    expect(screen.queryByText("Bin Configuration")).not.toBeInTheDocument();
+    expect(screen.queryByText("Layout Planner")).not.toBeInTheDocument();
   });
 
   it("Previous is disabled on step 1", () => {
@@ -67,22 +67,25 @@ describe("WizardShell", () => {
     expect(screen.getByTestId("next-btn")).not.toBeDisabled();
   });
 
-  it("clicking Next goes to step 2", () => {
+  it("clicking Next goes to step 2 (Layout)", () => {
     renderShell();
     fireEvent.click(screen.getByTestId("next-btn"));
-    expect(screen.getByText("Bin Configuration")).toBeInTheDocument();
+    expect(screen.getByText("Layout Planner")).toBeInTheDocument();
     expect(screen.queryByText("Space Definition")).not.toBeInTheDocument();
   });
 
   it("can navigate all the way through", () => {
     renderShell();
-    // Step 1 → 2
-    fireEvent.click(screen.getByTestId("next-btn"));
-    expect(screen.getByText("Bin Configuration")).toBeInTheDocument();
-    // Step 2 → 3
+    // Step 1 → 2 (Layout)
     fireEvent.click(screen.getByTestId("next-btn"));
     expect(screen.getByText("Layout Planner")).toBeInTheDocument();
-    // Step 3 → 4
+    // Step 2 → 3 (Bin Editor)
+    fireEvent.click(screen.getByTestId("next-btn"));
+    expect(screen.getByRole("heading", { name: /bin editor/i })).toBeInTheDocument();
+    // Step 3 → 4 (Baseplate Editor)
+    fireEvent.click(screen.getByTestId("next-btn"));
+    expect(screen.getByRole("heading", { name: /baseplate editor/i })).toBeInTheDocument();
+    // Step 4 → 5 (Print & Export)
     fireEvent.click(screen.getByTestId("next-btn"));
     expect(screen.getByText("Print Planner")).toBeInTheDocument();
     expect(screen.getByText("Export")).toBeInTheDocument();

@@ -18,7 +18,7 @@ function PlaceAndPlan({ placements }: { placements: [number, number][] }) {
           key={i}
           data-testid={`place-${i}`}
           onClick={() => {
-            placeItem(x, y, 1, 1, 3);
+            placeItem(x, y, 1, 1);
           }}
         />
       ))}

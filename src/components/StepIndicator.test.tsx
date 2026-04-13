@@ -12,11 +12,12 @@ function renderIndicator() {
 }
 
 describe("StepIndicator", () => {
-  it("renders 4 step buttons", () => {
+  it("renders 5 step buttons", () => {
     renderIndicator();
     expect(screen.getByText(/space & grid/i)).toBeInTheDocument();
-    expect(screen.getByText(/part design/i)).toBeInTheDocument();
-    expect(screen.getByText(/layout/i)).toBeInTheDocument();
+    expect(screen.getByText(/^layout$/i)).toBeInTheDocument();
+    expect(screen.getByText(/bin editor/i)).toBeInTheDocument();
+    expect(screen.getByText(/baseplates/i)).toBeInTheDocument();
     expect(screen.getByText(/print & export/i)).toBeInTheDocument();
   });
 
@@ -28,14 +29,14 @@ describe("StepIndicator", () => {
 
   it("clicking a step navigates to it", () => {
     renderIndicator();
-    fireEvent.click(screen.getByText(/layout/i));
-    const btn = screen.getByText(/layout/i).closest("button")!;
+    fireEvent.click(screen.getByText(/bin editor/i));
+    const btn = screen.getByText(/bin editor/i).closest("button")!;
     expect(btn).toHaveAttribute("aria-current", "step");
   });
 
   it("shows step numbers", () => {
     renderIndicator();
     expect(screen.getByText("1")).toBeInTheDocument();
-    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
   });
 });

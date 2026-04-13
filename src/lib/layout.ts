@@ -6,7 +6,6 @@ export interface LayoutItem {
   gridY: number;
   gridUnitsX: number;
   gridUnitsY: number;
-  heightUnits: number;
 }
 
 export interface LayoutState {
@@ -18,7 +17,6 @@ export interface LayoutState {
 export interface PartEntry {
   gridUnitsX: number;
   gridUnitsY: number;
-  heightUnits: number;
   quantity: number;
 }
 
@@ -30,8 +28,7 @@ export function createLayoutItem(
   gridX: number,
   gridY: number,
   gridUnitsX: number,
-  gridUnitsY: number,
-  heightUnits: number
+  gridUnitsY: number
 ): LayoutItem {
   return {
     id: `item-${nextId++}`,
@@ -39,7 +36,6 @@ export function createLayoutItem(
     gridY,
     gridUnitsX,
     gridUnitsY,
-    heightUnits,
   };
 }
 
@@ -57,12 +53,10 @@ export function itemsOverlap(a: LayoutItem, b: LayoutItem): boolean {
 // ── Placement Validation ─────────────────────────────────────────────────────
 
 export function canPlaceItem(item: LayoutItem, state: LayoutState): boolean {
-  // Bounds check
   if (item.gridX < 0 || item.gridY < 0) return false;
   if (item.gridX + item.gridUnitsX > state.gridUnitsX) return false;
   if (item.gridY + item.gridUnitsY > state.gridUnitsY) return false;
 
-  // Overlap check
   for (const existing of state.items) {
     if (existing.id !== item.id && itemsOverlap(item, existing)) {
       return false;
@@ -88,7 +82,7 @@ export function removeItem(id: string, state: LayoutState): LayoutState {
 // ── Parts List ───────────────────────────────────────────────────────────────
 
 function partKey(item: LayoutItem): string {
-  return `${item.gridUnitsX}x${item.gridUnitsY}x${item.heightUnits}`;
+  return `${item.gridUnitsX}x${item.gridUnitsY}`;
 }
 
 export function getPartsList(state: LayoutState): PartEntry[] {
@@ -103,7 +97,6 @@ export function getPartsList(state: LayoutState): PartEntry[] {
       map.set(key, {
         gridUnitsX: item.gridUnitsX,
         gridUnitsY: item.gridUnitsY,
-        heightUnits: item.heightUnits,
         quantity: 1,
       });
     }

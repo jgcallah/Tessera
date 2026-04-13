@@ -17,7 +17,7 @@ function PlaceAndExport({ count }: { count: number }) {
           key={i}
           data-testid={`place-${i}`}
           onClick={() => {
-            placeItem(i, 0, 1, 1, 3);
+            placeItem(i, 0, 1, 1);
           }}
         />
       ))}

@@ -7,13 +7,11 @@ const GAP = 1; // px gap between cells
 interface LayoutGridProps {
   brushWidth: number;
   brushHeight: number;
-  brushHeightUnits: number;
 }
 
 export function LayoutGrid({
   brushWidth,
   brushHeight,
-  brushHeightUnits,
 }: LayoutGridProps): React.JSX.Element {
   const { layout, placeItem, removeLayoutItem } = useLayout();
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(
@@ -49,7 +47,7 @@ export function LayoutGrid({
       return;
     }
     // Otherwise place the current brush
-    placeItem(gridX, gridY, brushWidth, brushHeight, brushHeightUnits);
+    placeItem(gridX, gridY, brushWidth, brushHeight);
   }
 
   function handleMouseMove(gridX: number, gridY: number) {

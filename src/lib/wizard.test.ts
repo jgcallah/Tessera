@@ -10,16 +10,28 @@ import {
 } from "./wizard";
 
 describe("WIZARD_STEPS", () => {
-  it("has 4 steps", () => {
-    expect(WIZARD_STEPS).toHaveLength(4);
+  it("has 5 steps", () => {
+    expect(WIZARD_STEPS).toHaveLength(5);
   });
 
   it("starts with space-grid", () => {
     expect(WIZARD_STEPS[0]).toBe("space-grid");
   });
 
+  it("has layout as step 2", () => {
+    expect(WIZARD_STEPS[1]).toBe("layout");
+  });
+
+  it("has bin-editor as step 3", () => {
+    expect(WIZARD_STEPS[2]).toBe("bin-editor");
+  });
+
+  it("has baseplate-editor as step 4", () => {
+    expect(WIZARD_STEPS[3]).toBe("baseplate-editor");
+  });
+
   it("ends with print-export", () => {
-    expect(WIZARD_STEPS[3]).toBe("print-export");
+    expect(WIZARD_STEPS[4]).toBe("print-export");
   });
 });
 
@@ -36,8 +48,8 @@ describe("getStepIndex", () => {
     expect(getStepIndex("space-grid")).toBe(0);
   });
 
-  it("returns 3 for last step", () => {
-    expect(getStepIndex("print-export")).toBe(3);
+  it("returns 4 for last step", () => {
+    expect(getStepIndex("print-export")).toBe(4);
   });
 });
 
@@ -60,16 +72,20 @@ describe("canGoNext / canGoPrev", () => {
 });
 
 describe("getNextStep / getPrevStep", () => {
-  it("next from space-grid is part-design", () => {
-    expect(getNextStep("space-grid")).toBe("part-design");
+  it("next from space-grid is layout", () => {
+    expect(getNextStep("space-grid")).toBe("layout");
+  });
+
+  it("next from layout is bin-editor", () => {
+    expect(getNextStep("layout")).toBe("bin-editor");
   });
 
   it("next from last step is undefined", () => {
     expect(getNextStep("print-export")).toBeUndefined();
   });
 
-  it("prev from part-design is space-grid", () => {
-    expect(getPrevStep("part-design")).toBe("space-grid");
+  it("prev from layout is space-grid", () => {
+    expect(getPrevStep("layout")).toBe("space-grid");
   });
 
   it("prev from first step is undefined", () => {

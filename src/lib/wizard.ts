@@ -1,16 +1,23 @@
-export type WizardStep = "space-grid" | "part-design" | "layout" | "print-export";
+export type WizardStep =
+  | "space-grid"
+  | "layout"
+  | "bin-editor"
+  | "baseplate-editor"
+  | "print-export";
 
 export const WIZARD_STEPS: readonly WizardStep[] = [
   "space-grid",
-  "part-design",
   "layout",
+  "bin-editor",
+  "baseplate-editor",
   "print-export",
 ];
 
 export const STEP_LABELS: Record<WizardStep, string> = {
   "space-grid": "Space & Grid",
-  "part-design": "Part Design",
   "layout": "Layout",
+  "bin-editor": "Bin Editor",
+  "baseplate-editor": "Baseplates",
   "print-export": "Print & Export",
 };
 

@@ -43,14 +43,16 @@ describe("App — new project flow", () => {
 });
 
 describe("App — wizard navigation", () => {
-  it("navigates through all 4 steps", () => {
+  it("navigates through all 5 steps", () => {
     render(<App />);
     fireEvent.click(screen.getByTestId("new-project"));
     expect(screen.getByText("Space Definition")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("next-btn"));
-    expect(screen.getByText("Bin Configuration")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("next-btn"));
     expect(screen.getByText("Layout Planner")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("next-btn"));
+    expect(screen.getByRole("heading", { name: /bin editor/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("next-btn"));
+    expect(screen.getByRole("heading", { name: /baseplate editor/i })).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("next-btn"));
     expect(screen.getByText("Print Planner")).toBeInTheDocument();
   });

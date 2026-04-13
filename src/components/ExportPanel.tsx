@@ -26,16 +26,15 @@ export function ExportPanel(): React.JSX.Element {
         createBinConfig({
           gridUnitsX: part.gridUnitsX,
           gridUnitsY: part.gridUnitsY,
-          heightUnits: part.heightUnits,
         }),
         gridConfig
       );
       return {
-        id: `${part.gridUnitsX}x${part.gridUnitsY}x${part.heightUnits}`,
+        id: `${part.gridUnitsX}x${part.gridUnitsY}`,
         width: dims.exteriorWidth,
         length: dims.exteriorLength,
         quantity: part.quantity,
-        label: `Bin ${part.gridUnitsX}×${part.gridUnitsY}×${part.heightUnits}u`,
+        label: `Bin ${part.gridUnitsX}×${part.gridUnitsY}`,
       };
     });
   }, [partsList, gridConfig]);
@@ -51,14 +50,13 @@ export function ExportPanel(): React.JSX.Element {
         const binConfig = createBinConfig({
           gridUnitsX: part.gridUnitsX,
           gridUnitsY: part.gridUnitsY,
-          heightUnits: part.heightUnits,
         });
         const manifold = await generateBinMesh(binConfig, gridConfig);
         const mesh = manifold.getMesh();
         const stl = meshToStlBinary(mesh);
         manifold.delete();
 
-        const name = `bin-${part.gridUnitsX}x${part.gridUnitsY}x${part.heightUnits}u.stl`;
+        const name = `bin-${part.gridUnitsX}x${part.gridUnitsY}.stl`;
         stlFiles.push({ name, data: stl });
       }
 

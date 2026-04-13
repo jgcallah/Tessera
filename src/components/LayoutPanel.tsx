@@ -6,7 +6,6 @@ export function LayoutPanel(): React.JSX.Element {
   const { partsList, clearLayout, layout } = useLayout();
   const [brushW, setBrushW] = useState(1);
   const [brushH, setBrushH] = useState(1);
-  const [brushHU, setBrushHU] = useState(3);
 
   const totalItems = layout.items.length;
   const totalCells = layout.gridUnitsX * layout.gridUnitsY;
@@ -33,7 +32,7 @@ export function LayoutPanel(): React.JSX.Element {
       {/* Brush Controls */}
       <div className="rounded border border-zinc-700 bg-zinc-900 p-3">
         <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
-          Bin to Place
+          Bin Footprint
         </h3>
         <div className="flex gap-2">
           <div className="flex-1">
@@ -74,25 +73,6 @@ export function LayoutPanel(): React.JSX.Element {
               className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-100"
             />
           </div>
-          <div className="flex-1">
-            <label
-              htmlFor="brush-hu"
-              className="mb-1 block text-xs text-zinc-400"
-            >
-              H
-            </label>
-            <input
-              id="brush-hu"
-              type="number"
-              min={1}
-              step={1}
-              value={brushHU}
-              onChange={(e) => {
-                setBrushHU(Math.max(1, parseInt(e.target.value) || 1));
-              }}
-              className="w-full rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm text-zinc-100"
-            />
-          </div>
         </div>
         <p className="mt-2 text-xs text-zinc-500">
           Click empty cells to place. Click occupied cells to remove.
@@ -101,11 +81,7 @@ export function LayoutPanel(): React.JSX.Element {
 
       {/* Grid */}
       <div className="overflow-auto">
-        <LayoutGrid
-          brushWidth={brushW}
-          brushHeight={brushH}
-          brushHeightUnits={brushHU}
-        />
+        <LayoutGrid brushWidth={brushW} brushHeight={brushH} />
       </div>
 
       {/* Stats */}
@@ -128,11 +104,11 @@ export function LayoutPanel(): React.JSX.Element {
           <div className="space-y-1 text-sm" data-testid="parts-list">
             {partsList.map((part) => (
               <div
-                key={`${part.gridUnitsX}x${part.gridUnitsY}x${part.heightUnits}`}
+                key={`${part.gridUnitsX}x${part.gridUnitsY}`}
                 className="flex justify-between"
               >
                 <span className="font-mono text-zinc-300">
-                  {part.gridUnitsX}×{part.gridUnitsY}×{part.heightUnits}u
+                  {part.gridUnitsX}×{part.gridUnitsY}
                 </span>
                 <span className="font-mono text-zinc-100">
                   ×{part.quantity}

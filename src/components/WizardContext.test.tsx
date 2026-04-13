@@ -51,7 +51,7 @@ describe("WizardProvider", () => {
     );
     expect(screen.getByTestId("step")).toHaveTextContent("space-grid");
     expect(screen.getByTestId("index")).toHaveTextContent("0");
-    expect(screen.getByTestId("total")).toHaveTextContent("4");
+    expect(screen.getByTestId("total")).toHaveTextContent("5");
   });
 
   it("accepts initial step", () => {
@@ -94,12 +94,12 @@ describe("wizard navigation", () => {
     act(() => {
       screen.getByTestId("next").click();
     });
-    expect(screen.getByTestId("step")).toHaveTextContent("part-design");
+    expect(screen.getByTestId("step")).toHaveTextContent("layout");
   });
 
   it("goPrev goes to previous step", () => {
     render(
-      <WizardProvider initialStep="part-design">
+      <WizardProvider initialStep="layout">
         <StepNav />
       </WizardProvider>
     );
