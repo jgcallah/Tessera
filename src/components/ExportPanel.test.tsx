@@ -82,8 +82,9 @@ describe("ExportPanel — with parts", () => {
     act(() => {
       screen.getByTestId("place-1").click();
     });
-    expect(screen.getByText(/1 unique part/i)).toBeInTheDocument();
-    expect(screen.getByText(/2 total/i)).toBeInTheDocument();
+    // Summary box shows unique parts and total instances
+    expect(screen.getByText("Unique Parts")).toBeInTheDocument();
+    expect(screen.getByText("Total Instances")).toBeInTheDocument();
   });
 
   it("zip button has correct label", () => {

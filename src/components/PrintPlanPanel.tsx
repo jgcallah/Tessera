@@ -11,7 +11,7 @@ import type { PrintBedConfig, PackableItem, PrintSheet } from "../lib/print-plan
 import { getBinDimensions } from "../lib/bin-config";
 import { createBinConfig } from "../lib/bin-config";
 
-const SHEET_SCALE = 0.8; // px per mm for sheet visualization
+const SHEET_SCALE = 1.0; // px per mm for sheet visualization
 
 const BED_PRESETS: { label: string; width: number; length: number }[] = [
   { label: "Ender 3", width: 220, length: 220 },
@@ -234,16 +234,25 @@ function SheetView({
         data-testid={`sheet-${sheet.index}`}
       >
         {sheet.placements.map((p, i) => (
-          <rect
-            key={i}
-            x={p.x * SHEET_SCALE}
-            y={p.y * SHEET_SCALE}
-            width={p.item.width * SHEET_SCALE}
-            height={p.item.length * SHEET_SCALE}
-            rx={2}
-            className="fill-violet-700 stroke-violet-500"
-            strokeWidth={1}
-          />
+          <g key={i}>
+            <rect
+              x={p.x * SHEET_SCALE}
+              y={p.y * SHEET_SCALE}
+              width={p.item.width * SHEET_SCALE}
+              height={p.item.length * SHEET_SCALE}
+              rx={3}
+              className="fill-violet-700/80 stroke-violet-400"
+              strokeWidth={1}
+            />
+            <text
+              x={(p.x + p.item.width / 2) * SHEET_SCALE}
+              y={(p.y + p.item.length / 2) * SHEET_SCALE + 3}
+              textAnchor="middle"
+              className="pointer-events-none select-none fill-violet-200 text-[8px] font-mono"
+            >
+              {p.item.label}
+            </text>
+          </g>
         ))}
       </svg>
     </div>
