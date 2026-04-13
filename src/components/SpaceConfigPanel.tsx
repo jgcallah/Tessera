@@ -144,6 +144,84 @@ export function SpaceConfigPanel(): React.JSX.Element {
         </div>
       </div>
 
+      {/* Spacers */}
+      {(gridFit.remainderWidth > 0 || gridFit.remainderLength > 0) && (
+        <div className="space-y-2">
+          <label
+            htmlFor="include-spacers"
+            className="flex items-center gap-2 text-sm text-zinc-300"
+          >
+            <input
+              id="include-spacers"
+              type="checkbox"
+              checked={spaceConfig.includeSpacers}
+              onChange={() => {
+                updateSpaceConfig({
+                  includeSpacers: !spaceConfig.includeSpacers,
+                });
+              }}
+              className="rounded border-zinc-600 bg-zinc-900"
+            />
+            Include spacers
+            <Tooltip text="Print spacer strips to fill the margin gaps, keeping the grid from sliding around." />
+          </label>
+          {spaceConfig.includeSpacers && (
+            <div className="ml-6 space-y-2">
+              <div>
+                <label
+                  htmlFor="spacer-clearance"
+                  className="mb-1 flex items-center text-xs text-zinc-400"
+                >
+                  Clearance per side
+                  <span className="ml-0.5 text-zinc-600">mm</span>
+                  <Tooltip text="Gap between the spacer and the container wall. Lower = tighter fit." />
+                </label>
+                <input
+                  id="spacer-clearance"
+                  type="number"
+                  min={0}
+                  step={0.25}
+                  value={spaceConfig.spacerClearance}
+                  onChange={(e) => {
+                    const num = parseFloat(e.target.value);
+                    if (!isNaN(num) && num >= 0) {
+                      updateSpaceConfig({ spacerClearance: num });
+                    }
+                  }}
+                  className="w-24 rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm text-zinc-100"
+                />
+              </div>
+              <div className="text-xs text-zinc-500">
+                {gridFit.spacerWidthX > 0 && (
+                  <p>
+                    X spacers:{" "}
+                    <span className="font-mono text-amber-400">
+                      {gridFit.spacerWidthX.toFixed(1)}mm
+                    </span>{" "}
+                    thick (×2)
+                  </p>
+                )}
+                {gridFit.spacerWidthY > 0 && (
+                  <p>
+                    Y spacers:{" "}
+                    <span className="font-mono text-amber-400">
+                      {gridFit.spacerWidthY.toFixed(1)}mm
+                    </span>{" "}
+                    thick (×2)
+                  </p>
+                )}
+                {gridFit.spacerWidthX <= 0 &&
+                  gridFit.spacerWidthY <= 0 && (
+                    <p className="text-zinc-600">
+                      Margins too small for spacers at this clearance.
+                    </p>
+                  )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Optimal Base Unit Suggestion */}
       {gridConfig.mode === "gridfinity" &&
         suggestion.wastePercent < gridFit.coveragePercent && (

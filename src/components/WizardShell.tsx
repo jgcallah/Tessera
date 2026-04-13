@@ -1,9 +1,8 @@
-import { Suspense, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useWizard } from "./WizardContext";
 import { useProject } from "./ProjectContext";
 import { StepIndicator } from "./StepIndicator";
 import { ProjectPanel } from "./ProjectPanel";
-import { ManifoldDemo } from "./ManifoldDemo";
 import { SpaceGridStep } from "./steps/SpaceGridStep";
 import { LayoutStep } from "./steps/LayoutStep";
 import { BinEditorStep } from "./steps/BinEditorStep";
@@ -46,7 +45,7 @@ export function WizardShell({
     <div className="flex h-screen flex-col bg-zinc-900 text-zinc-100">
       {/* Header */}
       <header className="shrink-0 border-b border-zinc-700 px-6 py-3">
-        <div className="flex items-center justify-between">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-6">
             {onBackToStart ? (
               <button
@@ -103,21 +102,12 @@ export function WizardShell({
             )}
             <StepIndicator />
           </div>
-          <div className="flex items-center gap-4">
-            <ProjectPanel />
-            <Suspense
-              fallback={
-                <span className="text-xs text-zinc-500">WASM...</span>
-              }
-            >
-              <ManifoldDemo />
-            </Suspense>
-          </div>
+          <ProjectPanel />
         </div>
       </header>
 
       {/* Step Content */}
-      <main className="min-h-0 flex-1 p-6">
+      <main className="min-h-0 w-full flex-1 p-6">
         {currentStep === "space-grid" && <SpaceGridStep />}
         {currentStep === "layout" && <LayoutStep />}
         {currentStep === "bin-editor" && <BinEditorStep />}
@@ -127,7 +117,7 @@ export function WizardShell({
 
       {/* Footer Navigation */}
       <footer className="shrink-0 border-t border-zinc-700 px-6 py-3">
-        <div className="flex items-center justify-between">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
           <button
             type="button"
             disabled={!canGoPrev}

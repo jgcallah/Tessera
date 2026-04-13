@@ -18,6 +18,8 @@ describe("createDefaultSpaceConfig", () => {
       width: 400,
       length: 300,
       depth: 50,
+      includeSpacers: false,
+      spacerClearance: 1.0,
     });
   });
 

@@ -17,6 +17,7 @@ import {
   canRedo as canRedoHistory,
 } from "../lib/layout";
 import { useSpaceConfig } from "./SpaceConfigContext";
+import { useToast } from "./ui/Toast";
 
 interface LayoutContextValue {
   layout: LayoutState;
@@ -57,6 +58,7 @@ export function LayoutProvider({
   children,
 }: LayoutProviderProps): React.JSX.Element {
   const { gridFit } = useSpaceConfig();
+  const { toast } = useToast();
 
   const [history, setHistory] = useState<LayoutHistory>(() =>
     createHistory({
@@ -70,17 +72,37 @@ export function LayoutProvider({
 
   const layout = history.present;
 
-  // Update grid dimensions when space/grid config changes
+  // Update grid dimensions when space/grid config changes and remove out-of-bounds bins
   useEffect(() => {
-    setHistory((prev) => ({
-      ...prev,
-      present: {
-        ...prev.present,
-        gridUnitsX: gridFit.unitsX,
-        gridUnitsY: gridFit.unitsY,
-      },
-    }));
-  }, [gridFit.unitsX, gridFit.unitsY]);
+    setHistory((prev) => {
+      const newX = gridFit.unitsX;
+      const newY = gridFit.unitsY;
+      const kept = prev.present.items.filter(
+        (item) =>
+          item.gridX + item.gridUnitsX <= newX &&
+          item.gridY + item.gridUnitsY <= newY
+      );
+      const removed = prev.present.items.length - kept.length;
+      if (removed > 0) {
+        // Toast is called inside a setState callback — schedule it
+        queueMicrotask(() => {
+          toast(
+            `Removed ${removed} bin${removed === 1 ? "" : "s"} outside the new grid`,
+            "info"
+          );
+        });
+      }
+      return {
+        ...prev,
+        present: {
+          ...prev.present,
+          items: kept,
+          gridUnitsX: newX,
+          gridUnitsY: newY,
+        },
+      };
+    });
+  }, [gridFit.unitsX, gridFit.unitsY, toast]);
 
   const partsList = useMemo(() => getPartsList(layout), [layout]);
 
