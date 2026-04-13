@@ -27,7 +27,7 @@ function renderShell() {
             <BaseplateConfigProvider>
               <LayoutProvider>
                 <PreviewProvider>
-                  <ProjectProvider>
+                  <ProjectProvider projectName="Test Project">
                     <WizardShell />
                   </ProjectProvider>
                 </PreviewProvider>

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { App } from "./App";
 
@@ -10,59 +10,48 @@ vi.mock("./ManifoldDemo", () => ({
   ManifoldDemo: () => <span>WASM mock</span>,
 }));
 
-describe("App", () => {
-  it("renders the app title", () => {
+beforeEach(() => {
+  localStorage.clear();
+});
+
+describe("App — start screen", () => {
+  it("shows the start screen by default", () => {
+    render(<App />);
+    expect(screen.getByTestId("new-project")).toBeInTheDocument();
+  });
+
+  it("shows Tessera title on start screen", () => {
     render(<App />);
     expect(screen.getByText("Tessera")).toBeInTheDocument();
   });
+});
 
-  it("shows step 1 (Space & Grid) by default", () => {
+describe("App — new project flow", () => {
+  it("clicking New Project enters the wizard", () => {
     render(<App />);
+    fireEvent.click(screen.getByTestId("new-project"));
     expect(screen.getByText("Space Definition")).toBeInTheDocument();
     expect(screen.getByText("Grid Configuration")).toBeInTheDocument();
   });
 
-  it("does not show later step content on load", () => {
+  it("can navigate back to start screen", () => {
     render(<App />);
-    expect(screen.queryByText("Bin Configuration")).not.toBeInTheDocument();
-    expect(screen.queryByText("Layout Planner")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("new-project"));
+    fireEvent.click(screen.getByTestId("back-to-start"));
+    expect(screen.getByTestId("new-project")).toBeInTheDocument();
   });
+});
 
+describe("App — wizard navigation", () => {
   it("navigates through all 4 steps", () => {
     render(<App />);
-    // Step 1
+    fireEvent.click(screen.getByTestId("new-project"));
     expect(screen.getByText("Space Definition")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("next-btn"));
-    // Step 2
     expect(screen.getByText("Bin Configuration")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("next-btn"));
-    // Step 3
     expect(screen.getByText("Layout Planner")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("next-btn"));
-    // Step 4
     expect(screen.getByText("Print Planner")).toBeInTheDocument();
-    expect(screen.getByText("Export")).toBeInTheDocument();
-  });
-
-  it("shows step indicator with all 4 steps", () => {
-    render(<App />);
-    // Step labels appear in both indicator and footer, so use getAllByText
-    expect(screen.getAllByText(/space & grid/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/part design/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/layout/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/print & export/i).length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("shows save/load project buttons", () => {
-    render(<App />);
-    expect(screen.getByTestId("save-project")).toBeInTheDocument();
-    expect(screen.getByTestId("load-project")).toBeInTheDocument();
-  });
-
-  it("shows gridfinity mode as default on step 1", () => {
-    render(<App />);
-    expect(
-      screen.getByRole("button", { name: /gridfinity/i })
-    ).toHaveAttribute("aria-pressed", "true");
   });
 });

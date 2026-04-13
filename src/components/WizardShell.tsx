@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { useWizard } from "./WizardContext";
+import { useProject } from "./ProjectContext";
 import { StepIndicator } from "./StepIndicator";
 import { ProjectPanel } from "./ProjectPanel";
 import { ManifoldDemo } from "./ManifoldDemo";
@@ -9,8 +10,15 @@ import { LayoutStep } from "./steps/LayoutStep";
 import { PrintExportStep } from "./steps/PrintExportStep";
 import { STEP_LABELS } from "../lib/wizard";
 
-export function WizardShell(): React.JSX.Element {
+interface WizardShellProps {
+  onBackToStart?: () => void;
+}
+
+export function WizardShell({
+  onBackToStart,
+}: WizardShellProps): React.JSX.Element {
   const { currentStep, goNext, goPrev, canGoNext, canGoPrev } = useWizard();
+  const { projectName } = useProject();
 
   return (
     <div className="flex h-screen flex-col bg-zinc-900 text-zinc-100">
@@ -18,7 +26,19 @@ export function WizardShell(): React.JSX.Element {
       <header className="shrink-0 border-b border-zinc-700 px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold tracking-tight">Tessera</h1>
+            {onBackToStart ? (
+              <button
+                type="button"
+                onClick={onBackToStart}
+                className="text-xl font-bold tracking-tight hover:text-violet-400"
+                data-testid="back-to-start"
+              >
+                Tessera
+              </button>
+            ) : (
+              <h1 className="text-xl font-bold tracking-tight">Tessera</h1>
+            )}
+            <span className="text-sm text-zinc-500">{projectName}</span>
             <StepIndicator />
           </div>
           <div className="flex items-center gap-4">

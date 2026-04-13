@@ -18,7 +18,7 @@ function renderPanel() {
         <BinConfigProvider>
           <BaseplateConfigProvider>
             <LayoutProvider>
-              <ProjectProvider>
+              <ProjectProvider projectName="Test">
                 <ProjectPanel />
               </ProjectProvider>
             </LayoutProvider>

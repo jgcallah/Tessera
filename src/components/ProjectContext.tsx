@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useMemo, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+} from "react";
 import type { ReactNode } from "react";
 import {
   serializeProject,
@@ -6,6 +13,7 @@ import {
   downloadProjectFile,
 } from "../lib/project";
 import type { ProjectData } from "../lib/project";
+import { saveProject } from "../lib/project-storage";
 import { useGridConfig } from "./GridConfigContext";
 import { useSpaceConfig } from "./SpaceConfigContext";
 import { useBinConfig } from "./BinConfigContext";
@@ -13,20 +21,29 @@ import { useBaseplateConfig } from "./BaseplateConfigContext";
 import { useLayout } from "./LayoutContext";
 
 interface ProjectContextValue {
+  projectName: string;
+  projectId: string | undefined;
   exportProject: () => void;
   importProject: (json: string) => void;
   importError: string | null;
   clearImportError: () => void;
+  saveToLocal: () => void;
 }
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
 interface ProjectProviderProps {
   children: ReactNode;
+  projectName: string;
+  projectId?: string;
+  initialData?: ProjectData;
 }
 
 export function ProjectProvider({
   children,
+  projectName: initialName,
+  projectId: initialId,
+  initialData,
 }: ProjectProviderProps): React.JSX.Element {
   const { config: gridConfig, updateConfig: updateGridConfig } =
     useGridConfig();
@@ -35,9 +52,20 @@ export function ProjectProvider({
   const { baseplateConfig, updateBaseplateConfig } = useBaseplateConfig();
   const { layout, importLayout } = useLayout();
 
+  const [projectName] = useState(initialName);
+  const [projectId, setProjectId] = useState<string | undefined>(initialId);
   const [importError, setImportError] = useState<string | null>(null);
 
-  const exportProject = useCallback(() => {
+  // Import initial data if loading an existing project
+  useEffect(() => {
+    if (initialData) {
+      importLayout(initialData.layout);
+    }
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const gatherProjectData = useCallback((): ProjectData => {
     const json = serializeProject({
       gridConfig,
       spaceConfig,
@@ -45,9 +73,33 @@ export function ProjectProvider({
       baseplateConfig,
       layout,
     });
-    const data: ProjectData = JSON.parse(json) as ProjectData;
-    downloadProjectFile(data);
+    return JSON.parse(json) as ProjectData;
   }, [gridConfig, spaceConfig, binConfig, baseplateConfig, layout]);
+
+  const saveToLocal = useCallback(() => {
+    const data = gatherProjectData();
+    const id = saveProject(projectName, data, projectId);
+    setProjectId(id);
+  }, [gatherProjectData, projectName, projectId]);
+
+  // Auto-save on changes (debounced by React's batching)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const data = gatherProjectData();
+      const id = saveProject(projectName, data, projectId);
+      if (!projectId) {
+        setProjectId(id);
+      }
+    }, 1000);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [gridConfig, spaceConfig, binConfig, baseplateConfig, layout, projectName, projectId, gatherProjectData]);
+
+  const exportProject = useCallback(() => {
+    const data = gatherProjectData();
+    downloadProjectFile(data, `${projectName}.json`);
+  }, [gatherProjectData, projectName]);
 
   const importProject = useCallback(
     (json: string) => {
@@ -79,8 +131,24 @@ export function ProjectProvider({
   }, []);
 
   const value = useMemo(
-    () => ({ exportProject, importProject, importError, clearImportError }),
-    [exportProject, importProject, importError, clearImportError]
+    () => ({
+      projectName,
+      projectId,
+      exportProject,
+      importProject,
+      importError,
+      clearImportError,
+      saveToLocal,
+    }),
+    [
+      projectName,
+      projectId,
+      exportProject,
+      importProject,
+      importError,
+      clearImportError,
+      saveToLocal,
+    ]
   );
 
   return (
