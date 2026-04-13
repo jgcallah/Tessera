@@ -3,10 +3,11 @@ import type { GridConfig, ValidationResult } from "./grid-config";
 // ── Gridfinity Baseplate Constants ───────────────────────────────────────────
 
 export const BASEPLATE_TOTAL_HEIGHT = 4.65;
-export const BASEPLATE_PLATE_THICKNESS = 2.0;
-export const BASEPLATE_POCKET_DEPTH =
-  BASEPLATE_TOTAL_HEIGHT - BASEPLATE_PLATE_THICKNESS;
+export const BASEPLATE_RIM_WIDTH = 2.4; // width of the rim/grid walls
 export const BASEPLATE_CORNER_RADIUS = 4.0;
+export const BASEPLATE_SKELETON_RIM_WIDTH = 1.2; // thinner walls for skeleton
+
+export type BaseplateStyle = "standard" | "skeleton";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,14 +16,15 @@ export interface BaseplateConfig {
   gridUnitsY: number;
   includeMagnetHoles: boolean;
   includeScrewHoles: boolean;
+  style: BaseplateStyle;
+  includeSnapConnectors: boolean;
 }
 
 export interface BaseplateDimensions {
   width: number;
   length: number;
   totalHeight: number;
-  plateThickness: number;
-  pocketDepth: number;
+  rimWidth: number;
   cornerRadius: number;
 }
 
@@ -33,6 +35,8 @@ const BASEPLATE_DEFAULTS: Readonly<BaseplateConfig> = {
   gridUnitsY: 1,
   includeMagnetHoles: true,
   includeScrewHoles: false,
+  style: "standard",
+  includeSnapConnectors: false,
 };
 
 export function createDefaultBaseplateConfig(): BaseplateConfig {
@@ -75,12 +79,16 @@ export function getBaseplateDimensions(
   config: BaseplateConfig,
   gridConfig: GridConfig
 ): BaseplateDimensions {
+  const rimWidth =
+    config.style === "skeleton"
+      ? BASEPLATE_SKELETON_RIM_WIDTH
+      : BASEPLATE_RIM_WIDTH;
+
   return {
     width: gridConfig.baseUnit * config.gridUnitsX,
     length: gridConfig.baseUnit * config.gridUnitsY,
     totalHeight: BASEPLATE_TOTAL_HEIGHT,
-    plateThickness: BASEPLATE_PLATE_THICKNESS,
-    pocketDepth: BASEPLATE_POCKET_DEPTH,
+    rimWidth,
     cornerRadius: BASEPLATE_CORNER_RADIUS,
   };
 }

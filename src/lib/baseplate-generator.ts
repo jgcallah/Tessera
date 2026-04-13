@@ -1,9 +1,6 @@
 import type { GridConfig } from "./grid-config";
 import type { BaseplateConfig } from "./baseplate-config";
-import {
-  getBaseplateDimensions,
-  BASEPLATE_CORNER_RADIUS,
-} from "./baseplate-config";
+import { getBaseplateDimensions } from "./baseplate-config";
 import { GRIDFINITY_MAGNET_HOLE_INSET } from "./bin-config";
 import { getGridDerivedValues } from "./grid-config";
 import { getManifold } from "./manifold";
@@ -14,7 +11,9 @@ type ManifoldWasm = Awaited<ReturnType<typeof Module>>;
 type Manifold = InstanceType<ManifoldWasm["Manifold"]>;
 
 /**
- * Generate a Gridfinity-compatible baseplate mesh.
+ * Generate a Gridfinity-compatible baseplate as a frame/waffle structure.
+ * The baseplate is an open grid of rim walls with receptacle profiles on top.
+ * No solid bottom — just the perimeter rim and internal grid walls.
  * The caller MUST call .delete() on the returned Manifold when done.
  */
 export async function generateBaseplateMesh(
@@ -27,66 +26,62 @@ export async function generateBaseplateMesh(
   const intermediates: { delete(): void }[] = [];
 
   try {
-    // 1. Create the base slab (full footprint, full height)
+    const cellSize = gridConfig.baseUnit;
+    const halfW = dims.width / 2;
+    const halfL = dims.length / 2;
+    const wallParts: Manifold[] = [];
+
+    // Build the frame: outer rim + internal grid walls
+    // Each wall is a rectangular extrusion at the cell boundaries
+
+    // Horizontal walls (along X axis) at each Y boundary
+    for (let iy = 0; iy <= config.gridUnitsY; iy++) {
+      const y = iy * cellSize - halfL;
+      const wallLength = dims.width;
+      let wall = wasm.Manifold.cube(
+        [wallLength, dims.rimWidth, dims.totalHeight],
+        false
+      );
+      intermediates.push(wall);
+      wall = wall.translate(-halfW, y - dims.rimWidth / 2, 0);
+      intermediates.push(wall);
+      wallParts.push(wall);
+    }
+
+    // Vertical walls (along Y axis) at each X boundary
+    for (let ix = 0; ix <= config.gridUnitsX; ix++) {
+      const x = ix * cellSize - halfW;
+      const wallLength = dims.length;
+      let wall = wasm.Manifold.cube(
+        [dims.rimWidth, wallLength, dims.totalHeight],
+        false
+      );
+      intermediates.push(wall);
+      wall = wall.translate(x - dims.rimWidth / 2, -halfL, 0);
+      intermediates.push(wall);
+      wallParts.push(wall);
+    }
+
+    let plate = wasm.Manifold.union(wallParts);
+    intermediates.push(plate);
+
+    // Clip to the rounded outer boundary
     const outerPts = roundedRectPoints(
       dims.width,
       dims.length,
-      BASEPLATE_CORNER_RADIUS,
+      dims.cornerRadius,
       8
     );
     const outerCS = new wasm.CrossSection([outerPts]);
     intermediates.push(outerCS);
+    const outerBound = outerCS.extrude(dims.totalHeight + 0.1);
+    intermediates.push(outerBound);
 
-    let plate = outerCS.extrude(dims.totalHeight);
-    intermediates.push(plate);
+    const clipped = plate.intersect(outerBound);
+    intermediates.push(clipped);
+    plate = clipped;
 
-    // 2. Carve receptacle pockets for each grid cell
-    // Each pocket is a rounded rect slightly smaller than the cell,
-    // matching where the bin sits
-    const cellSize = gridConfig.baseUnit;
-    const pocketInset = gridConfig.tolerance / 2; // 0.25mm per side
-    const pocketWidth = cellSize - pocketInset * 2;
-    const pocketLength = cellSize - pocketInset * 2;
-    const pocketRadius = BASEPLATE_CORNER_RADIUS - pocketInset;
-
-    const pocketPts = roundedRectPoints(
-      pocketWidth,
-      pocketLength,
-      Math.max(pocketRadius, 0),
-      8
-    );
-    const pocketCS = new wasm.CrossSection([pocketPts]);
-    intermediates.push(pocketCS);
-
-    const pockets: Manifold[] = [];
-    for (let ix = 0; ix < config.gridUnitsX; ix++) {
-      for (let iy = 0; iy < config.gridUnitsY; iy++) {
-        const cellCenterX =
-          ix * cellSize - (dims.width / 2) + cellSize / 2;
-        const cellCenterY =
-          iy * cellSize - (dims.length / 2) + cellSize / 2;
-
-        let pocket = pocketCS.extrude(dims.pocketDepth + 0.01);
-        intermediates.push(pocket);
-        pocket = pocket.translate(
-          cellCenterX,
-          cellCenterY,
-          dims.plateThickness
-        );
-        intermediates.push(pocket);
-        pockets.push(pocket);
-      }
-    }
-
-    if (pockets.length > 0) {
-      const allPockets = wasm.Manifold.union(pockets);
-      intermediates.push(allPockets);
-      const pocketed = plate.subtract(allPockets);
-      intermediates.push(pocketed);
-      plate = pocketed;
-    }
-
-    // 3. Magnet holes
+    // Magnet holes
     if (config.includeMagnetHoles) {
       plate = subtractHoles(
         wasm,
@@ -100,7 +95,7 @@ export async function generateBaseplateMesh(
       );
     }
 
-    // 4. Screw holes
+    // Screw holes
     if (config.includeScrewHoles && config.includeMagnetHoles) {
       plate = subtractHoles(
         wasm,
@@ -109,7 +104,7 @@ export async function generateBaseplateMesh(
         gridConfig,
         dims,
         derived.screwHoleDiameter,
-        dims.plateThickness + 0.1, // through the plate
+        dims.totalHeight + 0.1,
         intermediates
       );
     }

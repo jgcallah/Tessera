@@ -18,6 +18,8 @@ describe("createDefaultBaseplateConfig", () => {
       gridUnitsY: 1,
       includeMagnetHoles: true,
       includeScrewHoles: false,
+      style: "standard",
+      includeSnapConnectors: false,
     });
   });
 
@@ -128,20 +130,20 @@ describe("getBaseplateDimensions", () => {
     expect(dims.totalHeight).toBeCloseTo(4.65, 2);
   });
 
-  it("computes plateThickness as 2.0mm", () => {
+  it("computes standard rimWidth as 2.4mm", () => {
     const dims = getBaseplateDimensions(
       createDefaultBaseplateConfig(),
       defaultGrid
     );
-    expect(dims.plateThickness).toBeCloseTo(2.0, 1);
+    expect(dims.rimWidth).toBeCloseTo(2.4, 1);
   });
 
-  it("computes pocketDepth", () => {
+  it("computes skeleton rimWidth as 1.2mm", () => {
     const dims = getBaseplateDimensions(
-      createDefaultBaseplateConfig(),
+      createBaseplateConfig({ style: "skeleton" }),
       defaultGrid
     );
-    expect(dims.pocketDepth).toBeCloseTo(2.65, 1); // 4.65 - 2.0
+    expect(dims.rimWidth).toBeCloseTo(1.2, 1);
   });
 
   it("computes cornerRadius as 4.0mm", () => {
