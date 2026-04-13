@@ -94,10 +94,9 @@ describe("BinEditorStep — with bins", () => {
     });
     const binButton = screen.getByTestId("bin-list").querySelector("button")!;
     fireEvent.click(binButton);
-    fireEvent.change(screen.getByLabelText(/height units/i), {
-      target: { value: "5" },
-    });
-    expect(screen.getByLabelText(/height units/i)).toHaveValue(5);
+    const input = document.getElementById("bin-height") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "5" } });
+    expect(input).toHaveValue(5);
   });
 
   it("can toggle stacking lip", () => {
