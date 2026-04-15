@@ -113,7 +113,7 @@ export async function generateBaseplateMesh(
         config,
         gridConfig,
         dims,
-        derived.magnetHoleDiameter,
+        gridConfig.magnetDiameter,
         derived.magnetHoleDepth,
         intermediates
       );
@@ -127,10 +127,15 @@ export async function generateBaseplateMesh(
         config,
         gridConfig,
         dims,
-        derived.screwHoleDiameter,
+        gridConfig.screwDiameter,
         dims.totalHeight + EXTRUDE_CLEARANCE,
         intermediates
       );
+    }
+
+    // Snap connector channels — one per outer-perimeter cell on each outer wall
+    if (config.includeSnapConnectors) {
+      plate = carveSnapChannels(wasm, plate, config, gridConfig, dims, intermediates);
     }
 
     // Remove final result from intermediates
@@ -163,8 +168,8 @@ function carveSocketProfiles(
   const halfW = dims.width / 2;
   const halfL = dims.length / 2;
 
-  // Socket opening size per cell (with tolerance + ledge)
-  const socketWidth = cellSize - gridConfig.tolerance - 2 * SOCKET_LEDGE;
+  // Socket opening size per cell (with ledge around edge)
+  const socketWidth = cellSize - 2 * SOCKET_LEDGE;
   const socketPts = roundedRectPoints(
     socketWidth,
     socketWidth,
@@ -255,6 +260,102 @@ function subtractHoles(
   intermediates.push(allHoles);
 
   const result = plate.subtract(allHoles);
+  intermediates.push(result);
+  return result;
+}
+
+// ── Snap connector geometry ──────────────────────────────────────────────────
+// Measurements from the supplied clip-47.stl:
+//   - 19.6 mm along the shared rim edge
+//   - 4.3 mm across the joint (through-rim direction)
+//   - 3.674 mm tall
+// One snap pocket is carved at the CENTER of each outer-perimeter cell on
+// each outer wall. The pocket is sized to the full clip bounding box so the
+// removed piece clearly matches the snap clip itself. The cutter is built
+// from axis-aligned box primitives to avoid rotation-convention ambiguity.
+
+const CLIP_LEN = 19.6; // along the wall
+const CLIP_THROUGH = 4.3; // perpendicular (through rim; may exceed rim thickness)
+const CLIP_TALL = 3.674; // vertical from rim bottom
+
+function carveSnapChannels(
+  wasm: ManifoldWasm,
+  plate: Manifold,
+  config: BaseplateConfig,
+  gridConfig: GridConfig,
+  dims: ReturnType<typeof getBaseplateDimensions>,
+  intermediates: { delete(): void }[]
+): Manifold {
+  const halfW = dims.width / 2;
+  const halfL = dims.length / 2;
+  const cell = gridConfig.baseUnit;
+  const slots: Manifold[] = [];
+
+  // Sink the pocket just below the rim top so it doesn't cut into the outer
+  // rounded-rect boundary in a way the chamfer removes anyway. Z range is
+  // roughly [0, 3.674].
+  const zMin = 0;
+
+  // Cutter for walls running along world X (top + bottom rims): long axis
+  // along X, through-rim along Y, tall along Z.
+  const xCutterBase = wasm.Manifold.cube(
+    [CLIP_LEN, CLIP_THROUGH, CLIP_TALL],
+    false
+  );
+  intermediates.push(xCutterBase);
+  const xCutter = xCutterBase.translate(
+    -CLIP_LEN / 2,
+    -CLIP_THROUGH / 2,
+    zMin
+  );
+  intermediates.push(xCutter);
+
+  // Cutter for walls running along world Y (left + right rims): swap X/Y.
+  const yCutterBase = wasm.Manifold.cube(
+    [CLIP_THROUGH, CLIP_LEN, CLIP_TALL],
+    false
+  );
+  intermediates.push(yCutterBase);
+  const yCutter = yCutterBase.translate(
+    -CLIP_THROUGH / 2,
+    -CLIP_LEN / 2,
+    zMin
+  );
+  intermediates.push(yCutter);
+
+  // One pocket per cell on bottom and top rims. Cell centers along X:
+  // -halfW + (i + 0.5) * cellSize for i in [0, gridUnitsX).
+  for (let ix = 0; ix < config.gridUnitsX; ix++) {
+    const cx = -halfW + (ix + 0.5) * cell;
+
+    const bottom = xCutter.translate(cx, -halfL, 0);
+    intermediates.push(bottom);
+    slots.push(bottom);
+
+    const top = xCutter.translate(cx, halfL, 0);
+    intermediates.push(top);
+    slots.push(top);
+  }
+
+  // One pocket per cell on left and right rims.
+  for (let iy = 0; iy < config.gridUnitsY; iy++) {
+    const cy = -halfL + (iy + 0.5) * cell;
+
+    const left = yCutter.translate(-halfW, cy, 0);
+    intermediates.push(left);
+    slots.push(left);
+
+    const right = yCutter.translate(halfW, cy, 0);
+    intermediates.push(right);
+    slots.push(right);
+  }
+
+  if (slots.length === 0) return plate;
+
+  const allSlots = wasm.Manifold.union(slots);
+  intermediates.push(allSlots);
+
+  const result = plate.subtract(allSlots);
   intermediates.push(result);
   return result;
 }
