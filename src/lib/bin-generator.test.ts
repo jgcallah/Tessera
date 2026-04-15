@@ -174,11 +174,11 @@ describe("generateBinMesh — config variations", () => {
   });
 
   it("works with custom grid config", async () => {
-    const customGrid = createGridConfig({ mode: "custom", baseUnit: 50, tolerance: 0.3 });
+    const customGrid = createGridConfig({ mode: "custom", baseUnit: 50 });
     const bin = await generateBinMesh(createDefaultBinConfig(), customGrid);
     const bbox = bin.boundingBox();
     const meshWidth = bbox.max[0] - bbox.min[0];
-    expect(meshWidth).toBeCloseTo(49.7, 0); // 50 - 0.3
+    expect(meshWidth).toBeCloseTo(50, 0); // 50 * 1
     bin.delete();
   });
 });

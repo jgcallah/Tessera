@@ -16,6 +16,10 @@ import {
   LIP_SUPPORT_MIN_HEIGHT,
   INTERIOR_FILLET_RADIUS,
   BRIDGE_THICKNESS,
+  DIVIDER_THICKNESS,
+  SCOOP_RADIUS_RATIO,
+  BOTTOM_HOLE_DIAMETER,
+  BOTTOM_HOLE_SPACING,
 } from "./bin-config";
 import { getGridDerivedValues } from "./grid-config";
 import { getManifold } from "./manifold";
@@ -49,7 +53,7 @@ export async function generateBinMesh(
 
   try {
     const cellSize = gridConfig.baseUnit;
-    const padSize = cellSize - gridConfig.tolerance;
+    const padSize = cellSize;
 
     // ── Outer cross-section (full bin exterior) ─────────────────────────────
     const outerPts = roundedRectPoints(
@@ -168,7 +172,22 @@ export async function generateBinMesh(
 
     // ── 7. Screw holes ──────────────────────────────────────────────────────
     if (binConfig.includeScrewHoles && binConfig.includeMagnetHoles) {
-      bin = subtractScrewHoles(wasm, bin, binConfig, gridConfig, dims, derived, intermediates);
+      bin = subtractScrewHoles(wasm, bin, binConfig, gridConfig, dims, intermediates);
+    }
+
+    // ── 8. Internal dividers ────────────────────────────────────────────────
+    if (binConfig.dividersX > 0 || binConfig.dividersY > 0) {
+      bin = addDividers(wasm, bin, binConfig, gridConfig, dims, cavityFloor, cavityTop, intermediates);
+    }
+
+    // ── 9. Scoop ────────────────────────────────────────────────────────────
+    if (binConfig.includeScoop) {
+      bin = carveScoop(wasm, bin, dims, cavityFloor, cavityTop, intermediates);
+    }
+
+    // ── 10. Bottom holes ────────────────────────────────────────────────────
+    if (binConfig.includeBottomHoles) {
+      bin = subtractBottomHoles(wasm, bin, dims, cavityFloor, intermediates);
     }
 
     // Remove final result from intermediates
@@ -251,6 +270,182 @@ function carveLipWithSupport(
   return bin;
 }
 
+// ── Internal Dividers ────────────────────────────────────────────────────────
+
+function addDividers(
+  wasm: ManifoldWasm,
+  bin: Manifold,
+  binConfig: BinConfig,
+  gridConfig: GridConfig,
+  dims: ReturnType<typeof getBinDimensions>,
+  cavityFloor: number,
+  cavityTop: number,
+  intermediates: { delete(): void }[]
+): Manifold {
+  const maxHeight = cavityTop - cavityFloor;
+  if (maxHeight <= 0) return bin;
+
+  // If dividerHeightUnits is 0 (default), use full cavity height.
+  // Otherwise clamp to the cavity height so dividers never poke above the rim.
+  const requestedHeight =
+    binConfig.dividerHeightUnits > 0
+      ? binConfig.dividerHeightUnits * gridConfig.heightUnit
+      : maxHeight;
+  const dividerHeight = Math.min(requestedHeight, maxHeight);
+  if (dividerHeight <= 0) return bin;
+
+  const dividers: Manifold[] = [];
+
+  // X dividers (walls parallel to Y axis, splitting width)
+  if (binConfig.dividersX > 0) {
+    const compartmentW = dims.interiorWidth / (binConfig.dividersX + 1);
+    for (let i = 1; i <= binConfig.dividersX; i++) {
+      const x = -dims.interiorWidth / 2 + i * compartmentW - DIVIDER_THICKNESS / 2;
+      let wall = wasm.Manifold.cube(
+        [DIVIDER_THICKNESS, dims.interiorLength, dividerHeight],
+        false
+      );
+      intermediates.push(wall);
+      wall = wall.translate(x, -dims.interiorLength / 2, cavityFloor);
+      intermediates.push(wall);
+      dividers.push(wall);
+    }
+  }
+
+  // Y dividers (walls parallel to X axis, splitting length)
+  if (binConfig.dividersY > 0) {
+    const compartmentL = dims.interiorLength / (binConfig.dividersY + 1);
+    for (let i = 1; i <= binConfig.dividersY; i++) {
+      const y = -dims.interiorLength / 2 + i * compartmentL - DIVIDER_THICKNESS / 2;
+      let wall = wasm.Manifold.cube(
+        [dims.interiorWidth, DIVIDER_THICKNESS, dividerHeight],
+        false
+      );
+      intermediates.push(wall);
+      wall = wall.translate(-dims.interiorWidth / 2, y, cavityFloor);
+      intermediates.push(wall);
+      dividers.push(wall);
+    }
+  }
+
+  if (dividers.length === 0) return bin;
+
+  const allDividers = wasm.Manifold.union(dividers);
+  intermediates.push(allDividers);
+
+  const result = wasm.Manifold.union([bin, allDividers]);
+  intermediates.push(result);
+  return result;
+}
+
+// ── Scoop ───────────────────────────────────────────────────────────────────
+
+function carveScoop(
+  wasm: ManifoldWasm,
+  bin: Manifold,
+  dims: ReturnType<typeof getBinDimensions>,
+  cavityFloor: number,
+  cavityTop: number,
+  intermediates: { delete(): void }[]
+): Manifold {
+  // The scoop is a quarter-circle ramp added to the front-bottom interior
+  // corner of the cavity. We build it by creating a box at that corner,
+  // then subtracting a cylinder whose axis is at the back-top edge of the
+  // box, leaving a concave quarter-circle ramp.
+  const cavityHeight = cavityTop - cavityFloor;
+  if (cavityHeight <= 0) return bin;
+
+  const radius = Math.min(
+    cavityHeight * SCOOP_RADIUS_RATIO,
+    dims.interiorLength * 0.3
+  );
+  if (radius <= 0) return bin;
+
+  const cylLength = dims.interiorWidth;
+
+  // Box filling the front-bottom interior corner (centered cube)
+  let box = wasm.Manifold.cube([cylLength, radius, radius], true);
+  intermediates.push(box);
+  box = box.translate(
+    0,
+    -dims.interiorLength / 2 + radius / 2,
+    cavityFloor + radius / 2
+  );
+  intermediates.push(box);
+
+  // Cylinder at the back-top edge of the box (centered)
+  let cyl = wasm.Manifold.cylinder(
+    cylLength + EXTRUDE_CLEARANCE * 2,
+    radius,
+    radius,
+    32,
+    true
+  );
+  intermediates.push(cyl);
+  cyl = cyl.rotate([0, 90, 0]);
+  intermediates.push(cyl);
+  cyl = cyl.translate(
+    0,
+    -dims.interiorLength / 2 + radius,
+    cavityFloor + radius
+  );
+  intermediates.push(cyl);
+
+  // Ramp = box minus cylinder (leaves the concave quarter-wedge)
+  const ramp = box.subtract(cyl);
+  intermediates.push(ramp);
+
+  // Union the ramp with the bin (adds material at the corner)
+  const result = wasm.Manifold.union([bin, ramp]);
+  intermediates.push(result);
+  return result;
+}
+
+// ── Bottom Holes ────────────────────────────────────────────────────────────
+
+function subtractBottomHoles(
+  wasm: ManifoldWasm,
+  bin: Manifold,
+  dims: ReturnType<typeof getBinDimensions>,
+  cavityFloor: number,
+  intermediates: { delete(): void }[]
+): Manifold {
+  // Grid of holes in the floor for drainage or weight reduction
+  const holeRadius = BOTTOM_HOLE_DIAMETER / 2;
+  const floorThickness = cavityFloor; // holes go from Z=0 to cavityFloor
+
+  const holes: Manifold[] = [];
+  const startX = -dims.interiorWidth / 2 + BOTTOM_HOLE_SPACING;
+  const startY = -dims.interiorLength / 2 + BOTTOM_HOLE_SPACING;
+  const endX = dims.interiorWidth / 2 - BOTTOM_HOLE_SPACING / 2;
+  const endY = dims.interiorLength / 2 - BOTTOM_HOLE_SPACING / 2;
+
+  for (let x = startX; x <= endX; x += BOTTOM_HOLE_SPACING) {
+    for (let y = startY; y <= endY; y += BOTTOM_HOLE_SPACING) {
+      let cyl = wasm.Manifold.cylinder(
+        floorThickness + EXTRUDE_CLEARANCE,
+        holeRadius,
+        holeRadius,
+        CYLINDER_SEGMENTS,
+        false
+      );
+      intermediates.push(cyl);
+      cyl = cyl.translate(x, y, 0);
+      intermediates.push(cyl);
+      holes.push(cyl);
+    }
+  }
+
+  if (holes.length === 0) return bin;
+
+  const allHoles = wasm.Manifold.union(holes);
+  intermediates.push(allHoles);
+
+  const result = bin.subtract(allHoles);
+  intermediates.push(result);
+  return result;
+}
+
 // ── Hole Helpers ────────────────────────────────────────────────────────────
 
 function getHolePositions(
@@ -276,7 +471,7 @@ function subtractMagnetHoles(
   intermediates: { delete(): void }[]
 ): Manifold {
   const positions = getHolePositions(binConfig, gridConfig);
-  const holeDia = derived.magnetHoleDiameter;
+  const holeDia = gridConfig.magnetDiameter;
   const holeDepth = derived.magnetHoleDepth;
 
   const holes: Manifold[] = [];
@@ -310,11 +505,10 @@ function subtractScrewHoles(
   binConfig: BinConfig,
   gridConfig: GridConfig,
   dims: ReturnType<typeof getBinDimensions>,
-  derived: ReturnType<typeof getGridDerivedValues>,
   intermediates: { delete(): void }[]
 ): Manifold {
   const positions = getHolePositions(binConfig, gridConfig);
-  const holeDia = derived.screwHoleDiameter;
+  const holeDia = gridConfig.screwDiameter;
   const holeDepth = dims.baseHeight + EXTRUDE_CLEARANCE;
 
   const holes: Manifold[] = [];
