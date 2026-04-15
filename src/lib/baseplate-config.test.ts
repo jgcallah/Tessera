@@ -20,6 +20,9 @@ describe("createDefaultBaseplateConfig", () => {
       includeScrewHoles: false,
       style: "standard",
       includeSnapConnectors: false,
+      maxAutoSizeX: 5,
+      maxAutoSizeY: 5,
+      maxSpacerLength: 5,
     });
   });
 

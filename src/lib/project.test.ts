@@ -17,6 +17,12 @@ function createTestProject(): Omit<ProjectData, "version"> {
     binConfig: createDefaultBinConfig(),
     baseplateConfig: createDefaultBaseplateConfig(),
     layout: { items: [], gridUnitsX: 9, gridUnitsY: 7 },
+    baseplateLayout: {
+      items: [{ id: "bp-1", gridX: 0, gridY: 0, gridUnitsX: 3, gridUnitsY: 2 }],
+      spacers: [{ id: "sp-1", side: "right", offset: 0, length: 2 }],
+      gridUnitsX: 9,
+      gridUnitsY: 7,
+    },
   };
 }
 
@@ -44,6 +50,7 @@ describe("serializeProject", () => {
     expect(restored.binConfig).toEqual(original.binConfig);
     expect(restored.baseplateConfig).toEqual(original.baseplateConfig);
     expect(restored.layout).toEqual(original.layout);
+    expect(restored.baseplateLayout).toEqual(original.baseplateLayout);
   });
 });
 

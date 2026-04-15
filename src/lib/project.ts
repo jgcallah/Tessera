@@ -3,6 +3,7 @@ import type { SpaceConfig } from "./space-config";
 import type { BinConfig } from "./bin-config";
 import type { BaseplateConfig } from "./baseplate-config";
 import type { LayoutState } from "./layout";
+import type { BaseplateLayoutState } from "./baseplate-layout";
 import type { PrintBedConfig } from "./print-planner";
 
 export interface ProjectData {
@@ -12,6 +13,7 @@ export interface ProjectData {
   binConfig: BinConfig;
   baseplateConfig: BaseplateConfig;
   layout: LayoutState;
+  baseplateLayout?: BaseplateLayoutState;
   printBed?: PrintBedConfig;
 }
 

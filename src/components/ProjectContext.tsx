@@ -18,7 +18,9 @@ import { useGridConfig } from "./GridConfigContext";
 import { useSpaceConfig } from "./SpaceConfigContext";
 import { useBinConfig } from "./BinConfigContext";
 import { useBaseplateConfig } from "./BaseplateConfigContext";
+import { usePrinterConfig } from "./PrinterConfigContext";
 import { useLayout } from "./LayoutContext";
+import { useBaseplateLayout } from "./BaseplateLayoutContext";
 
 interface ProjectContextValue {
   projectName: string;
@@ -51,7 +53,10 @@ export function ProjectProvider({
   const { spaceConfig, updateSpaceConfig } = useSpaceConfig();
   const { binConfig, updateBinConfig } = useBinConfig();
   const { baseplateConfig, updateBaseplateConfig } = useBaseplateConfig();
+  const { printerConfig, updatePrinterConfig } = usePrinterConfig();
   const { layout, importLayout } = useLayout();
+  const { layout: baseplateLayout, importLayout: importBaseplateLayout } =
+    useBaseplateLayout();
 
   const [projectName, setProjectName] = useState(initialName);
   const [projectId, setProjectId] = useState<string | undefined>(initialId);
@@ -61,6 +66,9 @@ export function ProjectProvider({
   useEffect(() => {
     if (initialData) {
       importLayout(initialData.layout);
+      if (initialData.baseplateLayout) {
+        importBaseplateLayout(initialData.baseplateLayout);
+      }
     }
     // Only run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,9 +81,19 @@ export function ProjectProvider({
       binConfig,
       baseplateConfig,
       layout,
+      baseplateLayout,
+      printBed: printerConfig,
     });
     return JSON.parse(json) as ProjectData;
-  }, [gridConfig, spaceConfig, binConfig, baseplateConfig, layout]);
+  }, [
+    gridConfig,
+    spaceConfig,
+    binConfig,
+    baseplateConfig,
+    layout,
+    baseplateLayout,
+    printerConfig,
+  ]);
 
   const saveToLocal = useCallback(() => {
     const data = gatherProjectData();
@@ -95,7 +113,7 @@ export function ProjectProvider({
     return () => {
       clearTimeout(timer);
     };
-  }, [gridConfig, spaceConfig, binConfig, baseplateConfig, layout, projectName, projectId, gatherProjectData]);
+  }, [gridConfig, spaceConfig, binConfig, baseplateConfig, printerConfig, layout, baseplateLayout, projectName, projectId, gatherProjectData]);
 
   const exportProject = useCallback(() => {
     const data = gatherProjectData();
@@ -110,7 +128,11 @@ export function ProjectProvider({
         updateSpaceConfig(data.spaceConfig);
         updateBinConfig(data.binConfig);
         updateBaseplateConfig(data.baseplateConfig);
+        if (data.printBed) updatePrinterConfig(data.printBed);
         importLayout(data.layout);
+        if (data.baseplateLayout) {
+          importBaseplateLayout(data.baseplateLayout);
+        }
         setImportError(null);
       } catch (err: unknown) {
         setImportError(
@@ -123,7 +145,9 @@ export function ProjectProvider({
       updateSpaceConfig,
       updateBinConfig,
       updateBaseplateConfig,
+      updatePrinterConfig,
       importLayout,
+      importBaseplateLayout,
     ]
   );
 

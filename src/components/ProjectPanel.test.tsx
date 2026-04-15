@@ -4,7 +4,9 @@ import { GridConfigProvider } from "./GridConfigContext";
 import { SpaceConfigProvider } from "./SpaceConfigContext";
 import { BinConfigProvider } from "./BinConfigContext";
 import { BaseplateConfigProvider } from "./BaseplateConfigContext";
+import { PrinterConfigProvider } from "./PrinterConfigContext";
 import { LayoutProvider } from "./LayoutContext";
+import { BaseplateLayoutProvider } from "./BaseplateLayoutContext";
 import { ProjectProvider } from "./ProjectContext";
 import { ProjectPanel } from "./ProjectPanel";
 
@@ -20,11 +22,15 @@ function renderPanel() {
       <SpaceConfigProvider>
         <BinConfigProvider>
           <BaseplateConfigProvider>
-            <LayoutProvider>
-              <ProjectProvider projectName="Test">
-                <ProjectPanel />
-              </ProjectProvider>
-            </LayoutProvider>
+            <PrinterConfigProvider>
+              <LayoutProvider>
+                <BaseplateLayoutProvider>
+                  <ProjectProvider projectName="Test">
+                    <ProjectPanel />
+                  </ProjectProvider>
+                </BaseplateLayoutProvider>
+              </LayoutProvider>
+            </PrinterConfigProvider>
           </BaseplateConfigProvider>
         </BinConfigProvider>
       </SpaceConfigProvider>

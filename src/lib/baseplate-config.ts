@@ -27,6 +27,11 @@ export interface BaseplateConfig {
   includeScrewHoles: boolean;
   style: BaseplateStyle;
   includeSnapConnectors: boolean;
+  /** Max grid units per side when auto-filling the baseplate layout. */
+  maxAutoSizeX: number;
+  maxAutoSizeY: number;
+  /** Max length (in grid units) for an auto-generated spacer piece. */
+  maxSpacerLength: number;
 }
 
 export interface BaseplateDimensions {
@@ -46,6 +51,9 @@ const BASEPLATE_DEFAULTS: Readonly<BaseplateConfig> = {
   includeScrewHoles: false,
   style: "standard",
   includeSnapConnectors: false,
+  maxAutoSizeX: 5,
+  maxAutoSizeY: 5,
+  maxSpacerLength: 5,
 };
 
 export function createDefaultBaseplateConfig(): BaseplateConfig {
@@ -70,6 +78,15 @@ export function validateBaseplateConfig(
   }
   if (!isPositiveInteger(config.gridUnitsY)) {
     errors.push("gridUnitsY must be a positive integer");
+  }
+  if (!isPositiveInteger(config.maxAutoSizeX)) {
+    errors.push("maxAutoSizeX must be a positive integer");
+  }
+  if (!isPositiveInteger(config.maxAutoSizeY)) {
+    errors.push("maxAutoSizeY must be a positive integer");
+  }
+  if (!isPositiveInteger(config.maxSpacerLength)) {
+    errors.push("maxSpacerLength must be a positive integer");
   }
   if (config.includeScrewHoles && !config.includeMagnetHoles) {
     errors.push("screw holes require magnet holes to be enabled");
