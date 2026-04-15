@@ -1,17 +1,11 @@
 import { useSpaceConfig } from "./SpaceConfigContext";
 import { useGridConfig } from "./GridConfigContext";
 import { validateSpaceConfig } from "../lib/space-config";
+import type { BaseUnitSuggestion } from "../lib/space-config";
 import { Tooltip } from "./ui/Tooltip";
 
-const PRESETS: { label: string; width: number; length: number; depth: number }[] = [
-  { label: "Small Drawer", width: 300, length: 200, depth: 50 },
-  { label: "Desk Organizer", width: 400, length: 300, depth: 60 },
-  { label: "Tool Chest Drawer", width: 500, length: 400, depth: 80 },
-  { label: "Shelf Bin", width: 600, length: 400, depth: 100 },
-];
-
 export function SpaceConfigPanel(): React.JSX.Element {
-  const { spaceConfig, gridFit, suggestion, updateSpaceConfig } =
+  const { spaceConfig, gridFit, suggestions, updateSpaceConfig } =
     useSpaceConfig();
   const { config: gridConfig, updateConfig: updateGridConfig } =
     useGridConfig();
@@ -24,16 +18,8 @@ export function SpaceConfigPanel(): React.JSX.Element {
     }
   }
 
-  function applyPreset(preset: (typeof PRESETS)[number]) {
-    updateSpaceConfig({
-      width: preset.width,
-      length: preset.length,
-      depth: preset.depth,
-    });
-  }
-
-  function applySuggestion() {
-    updateGridConfig({ mode: "custom", baseUnit: suggestion.baseUnit });
+  function applySuggestion(s: BaseUnitSuggestion) {
+    updateGridConfig({ mode: "custom", baseUnit: s.baseUnit });
   }
 
   return (
@@ -43,22 +29,6 @@ export function SpaceConfigPanel(): React.JSX.Element {
         <p className="mt-0.5 text-xs text-zinc-500">
           How much space do you have?
         </p>
-      </div>
-
-      {/* Presets */}
-      <div className="flex flex-wrap gap-1.5">
-        {PRESETS.map((preset) => (
-          <button
-            key={preset.label}
-            type="button"
-            onClick={() => {
-              applyPreset(preset);
-            }}
-            className="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-400 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
-          >
-            {preset.label}
-          </button>
-        ))}
       </div>
 
       {/* Dimension Inputs */}
@@ -144,107 +114,60 @@ export function SpaceConfigPanel(): React.JSX.Element {
         </div>
       </div>
 
-      {/* Spacers */}
-      {(gridFit.remainderWidth > 0 || gridFit.remainderLength > 0) && (
-        <div className="space-y-2">
-          <label
-            htmlFor="include-spacers"
-            className="flex items-center gap-2 text-sm text-zinc-300"
-          >
-            <input
-              id="include-spacers"
-              type="checkbox"
-              checked={spaceConfig.includeSpacers}
-              onChange={() => {
-                updateSpaceConfig({
-                  includeSpacers: !spaceConfig.includeSpacers,
-                });
-              }}
-              className="rounded border-zinc-600 bg-zinc-900"
-            />
-            Include spacers
-            <Tooltip text="Print spacer strips to fill the margin gaps, keeping the grid from sliding around." />
-          </label>
-          {spaceConfig.includeSpacers && (
-            <div className="ml-6 space-y-2">
-              <div>
-                <label
-                  htmlFor="spacer-clearance"
-                  className="mb-1 flex items-center text-xs text-zinc-400"
-                >
-                  Clearance per side
-                  <span className="ml-0.5 text-zinc-600">mm</span>
-                  <Tooltip text="Gap between the spacer and the container wall. Lower = tighter fit." />
-                </label>
-                <input
-                  id="spacer-clearance"
-                  type="number"
-                  min={0}
-                  step={0.25}
-                  value={spaceConfig.spacerClearance}
-                  onChange={(e) => {
-                    const num = parseFloat(e.target.value);
-                    if (!isNaN(num) && num >= 0) {
-                      updateSpaceConfig({ spacerClearance: num });
-                    }
+      {/* Suggested Grid Layouts */}
+      {suggestions.length > 0 && (
+        <div>
+          <h3 className="mb-2 flex items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+            Suggested Layouts
+            <Tooltip text="Different grid arrangements that fit your space well. Pick one based on how you want to split the space." />
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            {suggestions.map((s) => {
+              const coverage = 100 - s.wastePercent;
+              const isActive =
+                Math.abs(s.baseUnit - gridConfig.baseUnit) < 0.01;
+              return (
+                <button
+                  key={`${s.unitsX}x${s.unitsY}`}
+                  type="button"
+                  onClick={() => {
+                    applySuggestion(s);
                   }}
-                  className="w-24 rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm text-zinc-100"
-                />
-              </div>
-              <div className="text-xs text-zinc-500">
-                {gridFit.spacerWidthX > 0 && (
-                  <p>
-                    X spacers:{" "}
-                    <span className="font-mono text-amber-400">
-                      {gridFit.spacerWidthX.toFixed(1)}mm
-                    </span>{" "}
-                    thick (×2)
-                  </p>
-                )}
-                {gridFit.spacerWidthY > 0 && (
-                  <p>
-                    Y spacers:{" "}
-                    <span className="font-mono text-amber-400">
-                      {gridFit.spacerWidthY.toFixed(1)}mm
-                    </span>{" "}
-                    thick (×2)
-                  </p>
-                )}
-                {gridFit.spacerWidthX <= 0 &&
-                  gridFit.spacerWidthY <= 0 && (
-                    <p className="text-zinc-600">
-                      Margins too small for spacers at this clearance.
-                    </p>
+                  disabled={isActive}
+                  className={`rounded border px-3 py-2 text-left transition-colors ${
+                    isActive
+                      ? "cursor-default border-violet-500 bg-violet-900/50"
+                      : "border-zinc-700 bg-zinc-900 hover:border-violet-600 hover:bg-violet-950/40"
+                  }`}
+                >
+                  <div className="font-mono text-sm font-semibold text-zinc-100">
+                    {s.unitsX}×{s.unitsY}
+                  </div>
+                  <div className="mt-0.5 text-xs text-zinc-500">
+                    {s.baseUnit}mm
+                  </div>
+                  <div
+                    className={`text-xs font-medium ${
+                      coverage >= 95
+                        ? "text-green-400"
+                        : coverage >= 85
+                          ? "text-yellow-400"
+                          : "text-red-400"
+                    }`}
+                  >
+                    {coverage.toFixed(1)}%
+                  </div>
+                  {isActive && (
+                    <div className="mt-0.5 text-[10px] text-violet-300">
+                      active
+                    </div>
                   )}
-              </div>
-            </div>
-          )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
-
-      {/* Optimal Base Unit Suggestion */}
-      {gridConfig.mode === "gridfinity" &&
-        suggestion.wastePercent < gridFit.coveragePercent && (
-          <div className="rounded border border-violet-800/50 bg-violet-950/50 p-3">
-            <p className="mb-2 text-xs text-violet-300">
-              Using{" "}
-              <span className="font-mono font-bold">
-                {suggestion.baseUnit}mm
-              </span>{" "}
-              base unit would improve coverage to{" "}
-              <span className="font-mono font-bold">
-                {(100 - suggestion.wastePercent).toFixed(1)}%
-              </span>
-            </p>
-            <button
-              type="button"
-              onClick={applySuggestion}
-              className="rounded bg-violet-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-600"
-            >
-              Switch to Custom Grid
-            </button>
-          </div>
-        )}
 
       {/* Validation */}
       {!validation.valid && (

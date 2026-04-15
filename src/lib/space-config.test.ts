@@ -20,6 +20,8 @@ describe("createDefaultSpaceConfig", () => {
       depth: 50,
       includeSpacers: false,
       spacerClearance: 1.0,
+      gridAlignmentX: "center",
+      gridAlignmentY: "center",
     });
   });
 

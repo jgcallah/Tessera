@@ -6,6 +6,7 @@ import {
   createSpaceConfig,
   getGridFit,
   suggestOptimalBaseUnit,
+  suggestTopBaseUnits,
 } from "../lib/space-config";
 import { useGridConfig } from "./GridConfigContext";
 
@@ -13,6 +14,7 @@ interface SpaceConfigContextValue {
   spaceConfig: SpaceConfig;
   gridFit: GridFit;
   suggestion: BaseUnitSuggestion;
+  suggestions: BaseUnitSuggestion[];
   updateSpaceConfig: (overrides: Partial<SpaceConfig>) => void;
   resetSpaceConfig: () => void;
 }
@@ -46,6 +48,11 @@ export function SpaceConfigProvider({
     [spaceConfig]
   );
 
+  const suggestions = useMemo(
+    () => suggestTopBaseUnits(spaceConfig, 3),
+    [spaceConfig]
+  );
+
   const updateSpaceConfig = useCallback(
     (overrides: Partial<SpaceConfig>) => {
       setSpaceConfig((prev) => createSpaceConfig({ ...prev, ...overrides }));
@@ -62,10 +69,18 @@ export function SpaceConfigProvider({
       spaceConfig,
       gridFit,
       suggestion,
+      suggestions,
       updateSpaceConfig,
       resetSpaceConfig,
     }),
-    [spaceConfig, gridFit, suggestion, updateSpaceConfig, resetSpaceConfig]
+    [
+      spaceConfig,
+      gridFit,
+      suggestion,
+      suggestions,
+      updateSpaceConfig,
+      resetSpaceConfig,
+    ]
   );
 
   return (

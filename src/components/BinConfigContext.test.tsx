@@ -113,8 +113,8 @@ describe("BinConfigProvider", () => {
         <ConfigReader />
       </Wrapper>
     );
-    // exteriorWidth = 42*1 - 0.5 = 41.5
-    expect(screen.getByTestId("extWidth")).toHaveTextContent("41.5");
+    // exteriorWidth = baseUnit * gridUnitsX = 42 * 1
+    expect(screen.getByTestId("extWidth")).toHaveTextContent("42");
   });
 
   it("accepts an initialConfig prop", () => {

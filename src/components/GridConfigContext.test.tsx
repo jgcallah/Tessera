@@ -9,8 +9,7 @@ function ConfigReader() {
     <div>
       <span data-testid="mode">{config.mode}</span>
       <span data-testid="baseUnit">{config.baseUnit}</span>
-      <span data-testid="tolerance">{config.tolerance}</span>
-      <span data-testid="cellSize">{derivedValues.cellSize}</span>
+      <span data-testid="magnetHoleDepth">{derivedValues.magnetHoleDepth}</span>
     </div>
   );
 }
@@ -23,20 +22,10 @@ function ConfigUpdater() {
       <span data-testid="mode">{config.mode}</span>
       <span data-testid="baseUnit">{config.baseUnit}</span>
       <span data-testid="heightUnit">{config.heightUnit}</span>
-      <span data-testid="tolerance">{config.tolerance}</span>
-      <span data-testid="cellSize">
-        {useGridConfig().derivedValues.cellSize}
-      </span>
       <button
         data-testid="set-custom-50"
         onClick={() => {
           updateConfig({ mode: "custom", baseUnit: 50 });
-        }}
-      />
-      <button
-        data-testid="set-tolerance"
-        onClick={() => {
-          updateConfig({ tolerance: 0.3 });
         }}
       />
       <button
@@ -83,7 +72,7 @@ describe("GridConfigProvider", () => {
         <ConfigReader />
       </GridConfigProvider>
     );
-    expect(screen.getByTestId("cellSize")).toHaveTextContent("41.5");
+    expect(screen.getByTestId("magnetHoleDepth")).toHaveTextContent("2.4");
   });
 
   it("accepts an initialConfig prop", () => {
@@ -121,19 +110,6 @@ describe("state updates", () => {
     });
     expect(screen.getByTestId("baseUnit")).toHaveTextContent("50");
     expect(screen.getByTestId("mode")).toHaveTextContent("custom");
-  });
-
-  it("updates derived values after config change", () => {
-    render(
-      <GridConfigProvider>
-        <ConfigUpdater />
-      </GridConfigProvider>
-    );
-    act(() => {
-      screen.getByTestId("set-custom-50").click();
-    });
-    // cellSize = 50 - 0.5 = 49.5
-    expect(screen.getByTestId("cellSize")).toHaveTextContent("49.5");
   });
 
   it("resets config to defaults", () => {
@@ -186,54 +162,5 @@ describe("mode switching", () => {
     });
     expect(screen.getByTestId("baseUnit")).toHaveTextContent("42");
     expect(screen.getByTestId("mode")).toHaveTextContent("gridfinity");
-  });
-
-  it("preserves tolerance when switching to gridfinity", () => {
-    render(
-      <GridConfigProvider>
-        <ConfigUpdater />
-      </GridConfigProvider>
-    );
-    // Set custom tolerance
-    act(() => {
-      screen.getByTestId("set-tolerance").click();
-    });
-    expect(screen.getByTestId("tolerance")).toHaveTextContent("0.3");
-    // Switch to gridfinity — tolerance should persist
-    act(() => {
-      screen.getByTestId("set-gridfinity").click();
-    });
-    expect(screen.getByTestId("tolerance")).toHaveTextContent("0.3");
-    expect(screen.getByTestId("mode")).toHaveTextContent("gridfinity");
-  });
-
-  it("allows tolerance update in gridfinity mode", () => {
-    render(
-      <GridConfigProvider>
-        <ConfigUpdater />
-      </GridConfigProvider>
-    );
-    act(() => {
-      screen.getByTestId("set-tolerance").click();
-    });
-    expect(screen.getByTestId("tolerance")).toHaveTextContent("0.3");
-    expect(screen.getByTestId("mode")).toHaveTextContent("gridfinity");
-  });
-
-  it("ignores locked field updates in gridfinity mode", () => {
-    render(
-      <GridConfigProvider>
-        <ConfigUpdater />
-      </GridConfigProvider>
-    );
-    // Try to set baseUnit without switching to custom — should be ignored
-    // The set-custom-50 button sets mode: "custom" so it works;
-    // but direct updateConfig({ baseUnit: 50 }) without mode change should not
-    // We test this via the tolerance button which doesn't change mode
-    expect(screen.getByTestId("baseUnit")).toHaveTextContent("42");
-    act(() => {
-      screen.getByTestId("set-tolerance").click();
-    });
-    expect(screen.getByTestId("baseUnit")).toHaveTextContent("42");
   });
 });

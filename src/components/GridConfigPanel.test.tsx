@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { GridConfigProvider } from "./GridConfigContext";
+import { SpaceConfigProvider } from "./SpaceConfigContext";
 import { GridConfigPanel } from "./GridConfigPanel";
 import type { GridConfig } from "../lib/grid-config";
 
@@ -10,7 +11,9 @@ vi.mock("@react-three/drei", () => import("../__mocks__/@react-three/drei"));
 function renderPanel(initialConfig?: Partial<GridConfig>) {
   return render(
     <GridConfigProvider {...(initialConfig ? { initialConfig } : {})}>
-      <GridConfigPanel />
+      <SpaceConfigProvider>
+        <GridConfigPanel />
+      </SpaceConfigProvider>
     </GridConfigProvider>
   );
 }
@@ -39,7 +42,6 @@ describe("GridConfigPanel — basic render", () => {
     renderPanel();
     expect(document.getElementById("field-baseUnit")! as HTMLInputElement).toHaveValue(42);
     expect(document.getElementById("field-heightUnit")! as HTMLInputElement).toHaveValue(7);
-    expect(document.getElementById("field-tolerance")! as HTMLInputElement).toHaveValue(0.5);
   });
 
   it("shows hardware fields after expanding", () => {
@@ -57,17 +59,6 @@ describe("GridConfigPanel — basic render", () => {
     fireEvent.click(screen.getByText(/hardware/i));
     expect(document.getElementById("field-magnetDiameter")! as HTMLInputElement).toBeDisabled();
     expect(document.getElementById("field-screwDiameter")! as HTMLInputElement).toBeDisabled();
-  });
-
-  it("keeps tolerance editable in gridfinity mode", () => {
-    renderPanel();
-    expect(document.getElementById("field-tolerance")! as HTMLInputElement).not.toBeDisabled();
-  });
-
-  it("shows derived cell size", () => {
-    renderPanel();
-    expect(screen.getByText(/cell size/i)).toBeInTheDocument();
-    expect(screen.getByTestId("cell-size-value")).toHaveTextContent("41.5");
   });
 });
 
@@ -97,14 +88,6 @@ describe("GridConfigPanel — custom mode", () => {
     fireEvent.change(input, { target: { value: "10" } });
     expect(input).toHaveValue(10);
   });
-
-  it("updates derived cell size after baseUnit change", () => {
-    renderPanel({ mode: "custom" });
-    const input = document.getElementById("field-baseUnit")! as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "50" } });
-    // cellSize = 50 - 0.5 = 49.5
-    expect(screen.getByTestId("cell-size-value")).toHaveTextContent("49.5");
-  });
 });
 
 // ── Cycle 3.3: Validation Feedback ───────────────────────────────────────────
@@ -116,14 +99,6 @@ describe("GridConfigPanel — validation", () => {
       target: { value: "0" },
     });
     expect(screen.getByText(/baseUnit must be greater than 0/i)).toBeInTheDocument();
-  });
-
-  it("shows error for tolerance >= baseUnit", () => {
-    renderPanel({ mode: "custom", baseUnit: 10 });
-    fireEvent.change(document.getElementById("field-tolerance")! as HTMLInputElement, {
-      target: { value: "10" },
-    });
-    expect(screen.getByText(/tolerance must be less than baseUnit/i)).toBeInTheDocument();
   });
 
   it("shows no errors for valid config", () => {

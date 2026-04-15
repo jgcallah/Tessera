@@ -4,8 +4,10 @@ import { useGridConfig } from "../GridConfigContext";
 import { MiniLayoutGrid } from "../MiniLayoutGrid";
 import { BinPropertyEditor } from "../BinPropertyEditor";
 import { BinPreviewPanel } from "../BinPreviewPanel";
+import type { BinPreviewItem } from "../BinPreviewPanel";
 import { layoutItemToBinConfig, DEFAULT_BIN_PROPERTIES } from "../../lib/layout";
 import type { BinProperties } from "../../lib/layout";
+import { getBinColor } from "../../lib/bin-colors";
 
 export function BinEditorStep(): React.JSX.Element {
   const { layout, updateBinProperties } = useLayout();
@@ -26,12 +28,19 @@ export function BinEditorStep(): React.JSX.Element {
     [layout.items, selectedIds]
   );
 
-  const singleSelected =
-    selectedItems.length === 1 ? selectedItems[0]! : null;
-
-  const previewBinConfig = useMemo(
-    () => (singleSelected ? layoutItemToBinConfig(singleSelected) : null),
-    [singleSelected]
+  // All layout items rendered in the 3D preview (not just selected)
+  const previewItems: BinPreviewItem[] = useMemo(
+    () =>
+      layout.items.map((item) => ({
+        id: item.id,
+        binConfig: layoutItemToBinConfig(item),
+        gridX: item.gridX,
+        gridY: item.gridY,
+        gridUnitsX: item.gridUnitsX,
+        gridUnitsY: item.gridUnitsY,
+        color: getBinColor(item.gridUnitsX, item.gridUnitsY),
+      })),
+    [layout.items]
   );
 
   const handlePropertyChange = useCallback(
@@ -51,6 +60,22 @@ export function BinEditorStep(): React.JSX.Element {
     },
     [updateBinProperties]
   );
+
+  const handleItemClick = useCallback((id: string, additive: boolean) => {
+    setSelectedIds((prev) => {
+      if (additive) {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      }
+      return new Set([id]);
+    });
+  }, []);
+
+  const handleBackgroundClick = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
 
   return (
     <div className="flex h-full gap-4">
@@ -83,16 +108,16 @@ export function BinEditorStep(): React.JSX.Element {
           ) : layout.items.length > 0 ? (
             <div className="flex items-center justify-center py-8">
               <p className="text-sm text-zinc-500">
-                Select a bin on the grid to configure it.
+                Select a bin on the grid or in the 3D view to configure it.
               </p>
             </div>
           ) : null}
         </div>
       </div>
 
-      {/* Right column: 3D Preview */}
+      {/* Right column: 3D Preview showing all bins */}
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-zinc-700/50 bg-zinc-950">
-        {singleSelected && previewBinConfig ? (
+        {previewItems.length > 0 ? (
           <Suspense
             fallback={
               <div className="flex h-full items-center justify-center">
@@ -101,16 +126,17 @@ export function BinEditorStep(): React.JSX.Element {
             }
           >
             <BinPreviewPanel
-              binConfig={previewBinConfig}
+              items={previewItems}
+              selectedIds={selectedIds}
               gridConfig={gridConfig}
+              onItemClick={handleItemClick}
+              onBackgroundClick={handleBackgroundClick}
             />
           </Suspense>
         ) : (
           <div className="flex h-full items-center justify-center">
             <p className="px-4 text-center text-sm text-zinc-600">
-              {selectedItems.length === 0
-                ? "Select a bin to preview"
-                : "Select a single bin to preview in 3D"}
+              No bins placed yet.
             </p>
           </div>
         )}

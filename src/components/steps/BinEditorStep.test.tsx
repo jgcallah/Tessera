@@ -67,7 +67,8 @@ describe("BinEditorStep — empty state", () => {
 
   it("shows empty state when no bins placed", () => {
     renderStep();
-    expect(screen.getByText(/no bins placed/i)).toBeInTheDocument();
+    // Both the mini grid and the 3D preview show the empty state copy.
+    expect(screen.getAllByText(/no bins placed/i).length).toBeGreaterThan(0);
   });
 });
 
@@ -160,17 +161,7 @@ describe("BinEditorStep — with bins", () => {
     expect(screen.getByText(/2 bins selected/i)).toBeInTheDocument();
   });
 
-  it("shows 3D preview placeholder when no bin selected", () => {
-    renderWithBins();
-    act(() => {
-      screen.getByTestId("place-bin").click();
-    });
-    expect(
-      screen.getByText(/select a bin to preview/i)
-    ).toBeInTheDocument();
-  });
-
-  it("shows single-select message when multiple bins selected", () => {
+  it("always shows the 3D preview when bins exist, regardless of selection", () => {
     renderWithBins();
     act(() => {
       screen.getByTestId("place-bin").click();
@@ -178,9 +169,8 @@ describe("BinEditorStep — with bins", () => {
     act(() => {
       screen.getByTestId("place-bin-2").click();
     });
-    fireEvent.click(screen.getByRole("button", { name: /select all/i }));
-    expect(
-      screen.getByText(/select a single bin to preview/i)
-    ).toBeInTheDocument();
+    // The empty-state copy must NOT appear once any bin is placed — the
+    // 3D preview panel takes over whether or not a bin is selected.
+    expect(screen.queryByText(/no bins placed/i)).not.toBeInTheDocument();
   });
 });

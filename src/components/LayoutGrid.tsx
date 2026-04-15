@@ -3,6 +3,7 @@ import { useLayout } from "./LayoutContext";
 import { canPlaceItem, createLayoutItem } from "../lib/layout";
 import type { LayoutItem } from "../lib/layout";
 import { getBinColor } from "../lib/bin-colors";
+import { BinShape } from "./partShapes";
 
 const GAP = 1;
 const MIN_CELL_SIZE = 24;
@@ -459,7 +460,10 @@ export function LayoutGrid({
   }
 
   return (
-    <div ref={containerRef} className="h-full w-full">
+    <div
+      ref={containerRef}
+      className="flex h-full w-full items-center justify-center"
+    >
       <svg
         ref={svgRef}
         width={svgWidth}
@@ -509,24 +513,33 @@ export function LayoutGrid({
             `${item.gridUnitsX}x${item.gridUnitsY}`;
           const color = getBinColor(item.gridUnitsX, item.gridUnitsY);
 
+          const binX = cellPx(item.gridX);
+          const binY = cellPx(item.gridY);
+          const binW = item.gridUnitsX * (cellSize + GAP) - GAP;
+          const binH = item.gridUnitsY * (cellSize + GAP) - GAP;
           return (
             <g key={`bin-${item.id}`}>
-              <rect
-                x={cellPx(item.gridX)}
-                y={cellPx(item.gridY)}
-                width={item.gridUnitsX * (cellSize + GAP) - GAP}
-                height={item.gridUnitsY * (cellSize + GAP) - GAP}
-                rx={3}
-                fill={color}
-                opacity={isMoving ? 0.3 : isHighlighted ? 1 : 0.8}
-                style={{
-                  cursor: isSelected ? "grab" : "pointer",
-                }}
+              <g
+                style={{ cursor: isSelected ? "grab" : "pointer" }}
                 onMouseDown={(e) => {
                   const coords = getGridCoords(e);
                   handleCellMouseDown(coords.x, coords.y);
                 }}
-              />
+              >
+                <BinShape
+                  x={binX}
+                  y={binY}
+                  width={binW}
+                  height={binH}
+                  cellsX={item.gridUnitsX}
+                  cellsY={item.gridUnitsY}
+                  color={color}
+                  opacity={isMoving ? 0.3 : isHighlighted ? 1 : 0.85}
+                  dividersX={item.binProperties.dividersX}
+                  dividersY={item.binProperties.dividersY}
+                  includeScoop={item.binProperties.includeScoop}
+                />
+              </g>
               {isSelected && !isMoving && (
                 <rect
                   x={cellPx(item.gridX) - 1}

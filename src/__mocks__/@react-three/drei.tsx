@@ -16,3 +16,7 @@ export function GizmoViewcube() {
 export function Html({ children }: { children?: ReactNode }) {
   return <>{children}</>;
 }
+
+export function Edges() {
+  return null;
+}

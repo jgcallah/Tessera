@@ -9,8 +9,8 @@ export interface BinProperties {
   includeScrewHoles: boolean;
   dividersX: number; // number of internal dividers along X (0 = none)
   dividersY: number; // number of internal dividers along Y (0 = none)
+  dividerHeightUnits: number; // height of internal dividers in units (0 = full cavity)
   includeScoop: boolean; // curved front wall for easy access
-  includeLabelTab: boolean; // angled surface at front for labels
   includeBottomHoles: boolean; // drainage / weight reduction holes in floor
 }
 
@@ -21,8 +21,8 @@ export const DEFAULT_BIN_PROPERTIES: Readonly<BinProperties> = {
   includeScrewHoles: false,
   dividersX: 0,
   dividersY: 0,
+  dividerHeightUnits: 0,
   includeScoop: false,
-  includeLabelTab: false,
   includeBottomHoles: false,
 };
 
@@ -260,5 +260,10 @@ export function layoutItemToBinConfig(item: LayoutItem): BinConfig {
     includeStackingLip: item.binProperties.includeStackingLip,
     includeMagnetHoles: item.binProperties.includeMagnetHoles,
     includeScrewHoles: item.binProperties.includeScrewHoles,
+    dividersX: item.binProperties.dividersX,
+    dividersY: item.binProperties.dividersY,
+    dividerHeightUnits: item.binProperties.dividerHeightUnits,
+    includeScoop: item.binProperties.includeScoop,
+    includeBottomHoles: item.binProperties.includeBottomHoles,
   };
 }

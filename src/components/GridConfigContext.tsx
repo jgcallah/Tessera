@@ -37,11 +37,8 @@ export function GridConfigProvider({
         const newMode = overrides.mode ?? prev.mode;
 
         if (newMode === "gridfinity") {
-          // Switching to or staying in gridfinity: lock all values except tolerance
-          return createGridConfig({
-            mode: "gridfinity",
-            tolerance: overrides.tolerance ?? prev.tolerance,
-          });
+          // Switching to or staying in gridfinity: lock all values to standard
+          return createGridConfig({ mode: "gridfinity" });
         }
 
         // Custom mode: apply all overrides

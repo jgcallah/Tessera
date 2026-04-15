@@ -1,6 +1,8 @@
 import { useGridConfig } from "./GridConfigContext";
+import { useSpaceConfig } from "./SpaceConfigContext";
 import { validateGridConfig } from "../lib/grid-config";
 import type { GridConfig, GridMode } from "../lib/grid-config";
+import type { GridAlignment } from "../lib/space-config";
 import { Tooltip } from "./ui/Tooltip";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
 
@@ -14,7 +16,7 @@ const BASIC_FIELDS: {
   {
     key: "baseUnit",
     label: "Base Unit",
-    tip: "Width/length of one grid square. Standard Gridfinity is 42mm.",
+    tip: "Width/length of one grid square. Standard Gridfinity is 42mm. Reduce to bake in a print tolerance.",
     lockedInGridfinity: true,
     step: 1,
   },
@@ -24,13 +26,6 @@ const BASIC_FIELDS: {
     tip: "Height of one vertical unit. Standard is 7mm (bins are measured in multiples of this).",
     lockedInGridfinity: true,
     step: 1,
-  },
-  {
-    key: "tolerance",
-    label: "Tolerance",
-    tip: "Clearance between parts for fit. 0.5mm is typical for FDM printing.",
-    lockedInGridfinity: false,
-    step: 0.1,
   },
 ];
 
@@ -61,7 +56,8 @@ const HARDWARE_FIELDS: typeof BASIC_FIELDS = [
 const MODES: GridMode[] = ["gridfinity", "custom"];
 
 export function GridConfigPanel(): React.JSX.Element {
-  const { config, derivedValues, updateConfig } = useGridConfig();
+  const { config, updateConfig } = useGridConfig();
+  const { spaceConfig, gridFit, updateSpaceConfig } = useSpaceConfig();
   const validation = validateGridConfig(config);
 
   function handleFieldChange(key: keyof GridConfig, value: string) {
@@ -153,18 +149,105 @@ export function GridConfigPanel(): React.JSX.Element {
         </div>
       </CollapsibleSection>
 
-      {/* Derived Values */}
-      <div className="rounded border border-zinc-700 bg-zinc-900 p-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-zinc-400">
-            Cell Size
-            <Tooltip text="Actual usable space per grid cell after tolerance is subtracted." />
-          </span>
-          <span data-testid="cell-size-value" className="font-mono text-zinc-100">
-            {derivedValues.cellSize} mm
-          </span>
+      {/* Grid Alignment + Spacers */}
+      {(gridFit.remainderWidth > 0 || gridFit.remainderLength > 0) && (
+        <div className="space-y-3">
+          {/* Spacers */}
+          <div className="space-y-2">
+            <label
+              htmlFor="include-spacers"
+              className="flex items-center gap-2 text-sm text-zinc-300"
+            >
+              <input
+                id="include-spacers"
+                type="checkbox"
+                checked={spaceConfig.includeSpacers}
+                onChange={() => {
+                  updateSpaceConfig({
+                    includeSpacers: !spaceConfig.includeSpacers,
+                  });
+                }}
+                className="rounded border-zinc-600 bg-zinc-900"
+              />
+              Include spacers
+              <Tooltip text="Print spacer strips to fill the margin gaps, keeping the grid from sliding around." />
+            </label>
+            {spaceConfig.includeSpacers && (
+              <div className="ml-6 space-y-3">
+                <div>
+                  <label
+                    htmlFor="spacer-clearance"
+                    className="mb-1 flex items-center text-xs text-zinc-400"
+                  >
+                    Clearance per side
+                    <span className="ml-0.5 text-zinc-600">mm</span>
+                    <Tooltip text="Gap between the spacer and the container wall. Lower = tighter fit." />
+                  </label>
+                  <input
+                    id="spacer-clearance"
+                    type="number"
+                    min={0}
+                    step={0.25}
+                    value={spaceConfig.spacerClearance}
+                    onChange={(e) => {
+                      const num = parseFloat(e.target.value);
+                      if (!isNaN(num) && num >= 0) {
+                        updateSpaceConfig({ spacerClearance: num });
+                      }
+                    }}
+                    className="w-24 rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm text-zinc-100"
+                  />
+                </div>
+
+                {/* Grid Alignment — only relevant when spacers are enabled */}
+                <div>
+                  <div className="mb-1.5 flex items-center text-xs text-zinc-400">
+                    Grid Alignment
+                    <Tooltip text="Where the grid sits within the available space. Affects spacer placement." />
+                  </div>
+                  <AlignmentGrid
+                    valueX={spaceConfig.gridAlignmentX}
+                    valueY={spaceConfig.gridAlignmentY}
+                    onChange={(x, y) => {
+                      updateSpaceConfig({
+                        gridAlignmentX: x,
+                        gridAlignmentY: y,
+                      });
+                    }}
+                  />
+                </div>
+
+                <div className="text-xs text-zinc-500">
+                  {gridFit.spacerX.count > 0 && (
+                    <p>
+                      X spacers:{" "}
+                      <span className="font-mono text-amber-400">
+                        {gridFit.spacerX.width.toFixed(1)}mm
+                      </span>{" "}
+                      thick (×{gridFit.spacerX.count})
+                    </p>
+                  )}
+                  {gridFit.spacerY.count > 0 && (
+                    <p>
+                      Y spacers:{" "}
+                      <span className="font-mono text-amber-400">
+                        {gridFit.spacerY.width.toFixed(1)}mm
+                      </span>{" "}
+                      thick (×{gridFit.spacerY.count})
+                    </p>
+                  )}
+                  {gridFit.spacerX.count === 0 &&
+                    gridFit.spacerY.count === 0 && (
+                      <p className="text-zinc-600">
+                        No spacers needed at this clearance.
+                      </p>
+                    )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Validation */}
       {!validation.valid && (
@@ -175,6 +258,64 @@ export function GridConfigPanel(): React.JSX.Element {
             </p>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Alignment Grid (3x3 selector) ────────────────────────────────────────────
+
+const ALIGNMENT_X: GridAlignment[] = ["start", "center", "end"];
+const ALIGNMENT_Y: GridAlignment[] = ["start", "center", "end"];
+
+function AlignmentGrid({
+  valueX,
+  valueY,
+  onChange,
+}: {
+  valueX: GridAlignment;
+  valueY: GridAlignment;
+  onChange: (x: GridAlignment, y: GridAlignment) => void;
+}): React.JSX.Element {
+  function justifyClass(a: GridAlignment): string {
+    if (a === "start") return "justify-start";
+    if (a === "end") return "justify-end";
+    return "justify-center";
+  }
+  function alignClass(a: GridAlignment): string {
+    if (a === "start") return "items-start";
+    if (a === "end") return "items-end";
+    return "items-center";
+  }
+
+  return (
+    <div className="inline-grid grid-cols-3 gap-1 rounded border border-zinc-700 bg-zinc-900 p-1">
+      {ALIGNMENT_Y.map((y) =>
+        ALIGNMENT_X.map((x) => {
+          const isActive = x === valueX && y === valueY;
+          return (
+            <button
+              key={`${x}-${y}`}
+              type="button"
+              onClick={() => {
+                onChange(x, y);
+              }}
+              aria-pressed={isActive}
+              aria-label={`Align ${x} ${y}`}
+              className={`flex h-7 w-7 rounded p-1 transition-colors ${justifyClass(x)} ${alignClass(y)} ${
+                isActive
+                  ? "bg-violet-600"
+                  : "bg-zinc-800 hover:bg-zinc-700"
+              }`}
+            >
+              <span
+                className={`block h-1.5 w-1.5 rounded-full ${
+                  isActive ? "bg-white" : "bg-zinc-500"
+                }`}
+              />
+            </button>
+          );
+        })
       )}
     </div>
   );

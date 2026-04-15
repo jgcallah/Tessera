@@ -36,11 +36,6 @@ const TOGGLES: ToggleField[] = [
     tip: "Curved front wall making it easier to grab small items from the bin.",
   },
   {
-    key: "includeLabelTab",
-    label: "Label Tab",
-    tip: "Angled surface at the front for attaching printed labels.",
-  },
-  {
     key: "includeBottomHoles",
     label: "Bottom Holes",
     tip: "Holes in the floor for drainage or weight reduction.",
@@ -55,11 +50,11 @@ interface MergedProperties {
   heightUnits: number | null;
   dividersX: number | null;
   dividersY: number | null;
+  dividerHeightUnits: number | null;
   includeStackingLip: MergedBool;
   includeMagnetHoles: MergedBool;
   includeScrewHoles: MergedBool;
   includeScoop: MergedBool;
-  includeLabelTab: MergedBool;
   includeBottomHoles: MergedBool;
 }
 
@@ -70,11 +65,11 @@ function computeMergedProperties(items: LayoutItem[]): MergedProperties {
       heightUnits: null,
       dividersX: null,
       dividersY: null,
+      dividerHeightUnits: null,
       includeStackingLip: "indeterminate",
       includeMagnetHoles: "indeterminate",
       includeScrewHoles: "indeterminate",
       includeScoop: "indeterminate",
-      includeLabelTab: "indeterminate",
       includeBottomHoles: "indeterminate",
     };
   }
@@ -82,7 +77,8 @@ function computeMergedProperties(items: LayoutItem[]): MergedProperties {
   const first = items[0]!.binProperties;
 
   function mergeNumber(key: keyof BinProperties): number | null {
-    const val = first[key] as number;
+    const val = first[key] as number | undefined;
+    if (typeof val !== "number") return null;
     return items.every((i) => i.binProperties[key] === val) ? val : null;
   }
 
@@ -98,11 +94,11 @@ function computeMergedProperties(items: LayoutItem[]): MergedProperties {
     heightUnits: mergeNumber("heightUnits"),
     dividersX: mergeNumber("dividersX"),
     dividersY: mergeNumber("dividersY"),
+    dividerHeightUnits: mergeNumber("dividerHeightUnits"),
     includeStackingLip: mergeBool("includeStackingLip"),
     includeMagnetHoles: mergeBool("includeMagnetHoles"),
     includeScrewHoles: mergeBool("includeScrewHoles"),
     includeScoop: mergeBool("includeScoop"),
-    includeLabelTab: mergeBool("includeLabelTab"),
     includeBottomHoles: mergeBool("includeBottomHoles"),
   };
 }
@@ -269,6 +265,45 @@ export function BinPropertyEditor({
               {(merged.dividersX + 1) * (merged.dividersY + 1)} compartments
             </p>
           )}
+
+        {/* Divider height — only relevant when dividers exist on any selected bin */}
+        {selectedItems.some(
+          (i) =>
+            i.binProperties.dividersX > 0 || i.binProperties.dividersY > 0
+        ) && (
+          <div className="mt-3">
+            <label
+              htmlFor="divider-height"
+              className="mb-1 flex items-center text-xs text-zinc-400"
+            >
+              Divider Height
+              <Tooltip text="Height of divider walls in units (1 unit = 7mm). 0 = full cavity height." />
+            </label>
+            <div className="flex items-baseline gap-2">
+              <input
+                id="divider-height"
+                type="number"
+                min={0}
+                step={1}
+                value={merged.dividerHeightUnits ?? ""}
+                placeholder={
+                  merged.dividerHeightUnits === null ? "mixed" : undefined
+                }
+                onChange={(e) => {
+                  handleNumberChange("dividerHeightUnits", e.target.value);
+                }}
+                className="w-20 rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm text-zinc-100 placeholder:text-zinc-600"
+              />
+              <span className="text-xs text-zinc-500">
+                {merged.dividerHeightUnits === null
+                  ? "varies"
+                  : merged.dividerHeightUnits === 0
+                    ? "full height"
+                    : `= ${merged.dividerHeightUnits * gridConfig.heightUnit}mm`}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Feature Toggles */}

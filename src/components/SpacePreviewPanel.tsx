@@ -58,14 +58,18 @@ export function SpacePreviewPanel(): React.JSX.Element {
   const cellSize = gridConfig.baseUnit;
   const gridW = gridFit.unitsX * cellSize;
   const gridL = gridFit.unitsY * cellSize;
-  const marginX = (spaceW - gridW) / 2;
-  const marginY = (spaceL - gridL) / 2;
+  const marginLeft = gridFit.gridOffsetX;
+  const marginRight = gridFit.remainderWidth - gridFit.gridOffsetX;
+  const marginTop = gridFit.gridOffsetY;
+  const marginBottom = gridFit.remainderLength - gridFit.gridOffsetY;
 
   const labelSize = Math.max(10, Math.min(13, 11 * scale));
   const dimLineOffset = 20; // offset for dimension lines outside the shape
 
-  const mxPx = marginX * scale;
-  const myPx = marginY * scale;
+  const mlPx = marginLeft * scale;
+  const mrPx = marginRight * scale;
+  const mtPx = marginTop * scale;
+  const mbPx = marginBottom * scale;
   const gwPx = gridW * scale;
   const glPx = gridL * scale;
 
@@ -104,94 +108,112 @@ export function SpacePreviewPanel(): React.JSX.Element {
           />
 
           {/* Margin areas with hatching */}
-          {marginX > 0 && (
-            <>
-              <rect
-                x={0}
-                y={myPx}
-                width={mxPx}
-                height={glPx}
-                fill="url(#margin-hatch)"
-              />
-              <rect
-                x={mxPx + gwPx}
-                y={myPx}
-                width={mxPx}
-                height={glPx}
-                fill="url(#margin-hatch)"
-              />
-            </>
+          {marginLeft > 0 && (
+            <rect
+              x={0}
+              y={mtPx}
+              width={mlPx}
+              height={glPx}
+              fill="url(#margin-hatch)"
+            />
           )}
-          {marginY > 0 && (
-            <>
-              <rect
-                x={0}
-                y={0}
-                width={svgW}
-                height={myPx}
-                fill="url(#margin-hatch)"
-              />
-              <rect
-                x={0}
-                y={myPx + glPx}
-                width={svgW}
-                height={myPx}
-                fill="url(#margin-hatch)"
-              />
-            </>
+          {marginRight > 0 && (
+            <rect
+              x={mlPx + gwPx}
+              y={mtPx}
+              width={mrPx}
+              height={glPx}
+              fill="url(#margin-hatch)"
+            />
+          )}
+          {marginTop > 0 && (
+            <rect
+              x={0}
+              y={0}
+              width={svgW}
+              height={mtPx}
+              fill="url(#margin-hatch)"
+            />
+          )}
+          {marginBottom > 0 && (
+            <rect
+              x={0}
+              y={mtPx + glPx}
+              width={svgW}
+              height={mbPx}
+              fill="url(#margin-hatch)"
+            />
           )}
 
-          {/* Spacers (if enabled) */}
-          {gridFit.spacerWidthX > 0 && (
+          {/* Spacers (if enabled) — rendered on the side(s) that have a gap */}
+          {gridFit.spacerX.count > 0 && (
             <>
-              <rect
-                x={spaceConfig.spacerClearance * scale}
-                y={myPx}
-                width={gridFit.spacerWidthX * scale}
-                height={glPx}
-                fill="#d97706"
-                opacity={0.35}
-                stroke="#f59e0b"
-                strokeWidth={1}
-                rx={1}
-              />
-              <rect
-                x={svgW - (spaceConfig.spacerClearance + gridFit.spacerWidthX) * scale}
-                y={myPx}
-                width={gridFit.spacerWidthX * scale}
-                height={glPx}
-                fill="#d97706"
-                opacity={0.35}
-                stroke="#f59e0b"
-                strokeWidth={1}
-                rx={1}
-              />
+              {/* Left side spacer (only if there's a left margin large enough) */}
+              {marginLeft > spaceConfig.spacerClearance && (
+                <rect
+                  x={spaceConfig.spacerClearance * scale}
+                  y={mtPx}
+                  width={
+                    (marginLeft - spaceConfig.spacerClearance) * scale
+                  }
+                  height={glPx}
+                  fill="#d97706"
+                  opacity={0.35}
+                  stroke="#f59e0b"
+                  strokeWidth={1}
+                  rx={1}
+                />
+              )}
+              {/* Right side spacer */}
+              {marginRight > spaceConfig.spacerClearance && (
+                <rect
+                  x={mlPx + gwPx}
+                  y={mtPx}
+                  width={
+                    (marginRight - spaceConfig.spacerClearance) * scale
+                  }
+                  height={glPx}
+                  fill="#d97706"
+                  opacity={0.35}
+                  stroke="#f59e0b"
+                  strokeWidth={1}
+                  rx={1}
+                />
+              )}
             </>
           )}
-          {gridFit.spacerWidthY > 0 && (
+          {gridFit.spacerY.count > 0 && (
             <>
-              <rect
-                x={mxPx}
-                y={spaceConfig.spacerClearance * scale}
-                width={gwPx}
-                height={gridFit.spacerWidthY * scale}
-                fill="#d97706"
-                opacity={0.35}
-                stroke="#f59e0b"
-                strokeWidth={1}
-                rx={1}
-              />
-              <rect
-                x={mxPx}
-                y={svgH - (spaceConfig.spacerClearance + gridFit.spacerWidthY) * scale}
-                width={gwPx}
-                height={gridFit.spacerWidthY * scale}
-                fill="#d97706"
-                opacity={0.35}
-                stroke="#f59e0b"
-                strokeWidth={1}
-                rx={1}
-              />
+              {marginTop > spaceConfig.spacerClearance && (
+                <rect
+                  x={mlPx}
+                  y={spaceConfig.spacerClearance * scale}
+                  width={gwPx}
+                  height={
+                    (marginTop - spaceConfig.spacerClearance) * scale
+                  }
+                  fill="#d97706"
+                  opacity={0.35}
+                  stroke="#f59e0b"
+                  strokeWidth={1}
+                  rx={1}
+                />
+              )}
+              {marginBottom > spaceConfig.spacerClearance && (
+                <rect
+                  x={mlPx}
+                  y={mtPx + glPx}
+                  width={gwPx}
+                  height={
+                    (marginBottom - spaceConfig.spacerClearance) * scale
+                  }
+                  fill="#d97706"
+                  opacity={0.35}
+                  stroke="#f59e0b"
+                  strokeWidth={1}
+                  rx={1}
+                />
+              )}
             </>
           )}
 
@@ -200,8 +222,8 @@ export function SpacePreviewPanel(): React.JSX.Element {
             Array.from({ length: gridFit.unitsY }, (_, iy) => (
               <rect
                 key={`${ix}-${iy}`}
-                x={mxPx + ix * cellSize * scale}
-                y={myPx + iy * cellSize * scale}
+                x={mlPx + ix * cellSize * scale}
+                y={mtPx + iy * cellSize * scale}
                 width={cellSize * scale - 1}
                 height={cellSize * scale - 1}
                 fill="#7c3aed"
@@ -215,8 +237,8 @@ export function SpacePreviewPanel(): React.JSX.Element {
 
           {/* Grid boundary */}
           <rect
-            x={mxPx}
-            y={myPx}
+            x={mlPx}
+            y={mtPx}
             width={gwPx}
             height={glPx}
             fill="none"
@@ -249,14 +271,14 @@ export function SpacePreviewPanel(): React.JSX.Element {
             vertical
           />
 
-          {/* Bottom: margin X left */}
-          {marginX > 0 && mxPx > 20 && (
+          {/* Bottom: left margin */}
+          {marginLeft > 0 && mlPx > 20 && (
             <DimLine
               x1={0}
               y1={svgH + dimLineOffset}
-              x2={mxPx}
+              x2={mlPx}
               y2={svgH + dimLineOffset}
-              label={marginX.toFixed(1)}
+              label={marginLeft.toFixed(1)}
               fontSize={labelSize - 1}
               color="#d97706"
             />
@@ -264,36 +286,36 @@ export function SpacePreviewPanel(): React.JSX.Element {
 
           {/* Bottom: grid width */}
           <DimLine
-            x1={mxPx}
+            x1={mlPx}
             y1={svgH + dimLineOffset}
-            x2={mxPx + gwPx}
+            x2={mlPx + gwPx}
             y2={svgH + dimLineOffset}
             label={`${gridW}mm`}
             fontSize={labelSize - 1}
             color="#c4b5fd"
           />
 
-          {/* Bottom: margin X right */}
-          {marginX > 0 && mxPx > 20 && (
+          {/* Bottom: right margin */}
+          {marginRight > 0 && mrPx > 20 && (
             <DimLine
-              x1={mxPx + gwPx}
+              x1={mlPx + gwPx}
               y1={svgH + dimLineOffset}
               x2={svgW}
               y2={svgH + dimLineOffset}
-              label={marginX.toFixed(1)}
+              label={marginRight.toFixed(1)}
               fontSize={labelSize - 1}
               color="#d97706"
             />
           )}
 
-          {/* Left: margin Y top */}
-          {marginY > 0 && myPx > 20 && (
+          {/* Left: top margin */}
+          {marginTop > 0 && mtPx > 20 && (
             <DimLine
               x1={-dimLineOffset}
               y1={0}
               x2={-dimLineOffset}
-              y2={myPx}
-              label={marginY.toFixed(1)}
+              y2={mtPx}
+              label={marginTop.toFixed(1)}
               fontSize={labelSize - 1}
               color="#d97706"
               vertical
@@ -303,23 +325,23 @@ export function SpacePreviewPanel(): React.JSX.Element {
           {/* Left: grid length */}
           <DimLine
             x1={-dimLineOffset}
-            y1={myPx}
+            y1={mtPx}
             x2={-dimLineOffset}
-            y2={myPx + glPx}
+            y2={mtPx + glPx}
             label={`${gridL}mm`}
             fontSize={labelSize - 1}
             color="#c4b5fd"
             vertical
           />
 
-          {/* Left: margin Y bottom */}
-          {marginY > 0 && myPx > 20 && (
+          {/* Left: bottom margin */}
+          {marginBottom > 0 && mbPx > 20 && (
             <DimLine
               x1={-dimLineOffset}
-              y1={myPx + glPx}
+              y1={mtPx + glPx}
               x2={-dimLineOffset}
               y2={svgH}
-              label={marginY.toFixed(1)}
+              label={marginBottom.toFixed(1)}
               fontSize={labelSize - 1}
               color="#d97706"
               vertical

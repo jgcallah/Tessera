@@ -2,12 +2,23 @@ import type { GridConfig, ValidationResult } from "./grid-config";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+export type GridAlignment = "start" | "center" | "end";
+
 export interface SpaceConfig {
   width: number; // mm, X dimension of the physical container
   length: number; // mm, Y dimension
   depth: number; // mm, Z dimension (how tall bins can be)
   includeSpacers: boolean; // whether to generate margin spacers
   spacerClearance: number; // mm, gap between spacer and wall (per side)
+  gridAlignmentX: GridAlignment; // grid positioning along X (width)
+  gridAlignmentY: GridAlignment; // grid positioning along Y (length)
+}
+
+export interface SpacerInfo {
+  /** Thickness of each spacer on this axis (0 if not needed). */
+  width: number;
+  /** Number of spacers on this axis (0, 1, or 2). */
+  count: number;
 }
 
 export interface GridFit {
@@ -19,8 +30,12 @@ export interface GridFit {
   remainderLength: number;
   coveragePercent: number;
   maxHeightUnits: number;
-  spacerWidthX: number; // spacer thickness for X margins (0 if not needed)
-  spacerWidthY: number; // spacer thickness for Y margins (0 if not needed)
+  /** Offset from the X-start edge of space to the grid's X-start edge. */
+  gridOffsetX: number;
+  /** Offset from the Y-start edge of space to the grid's Y-start edge. */
+  gridOffsetY: number;
+  spacerX: SpacerInfo;
+  spacerY: SpacerInfo;
 }
 
 export interface BaseUnitSuggestion {
@@ -38,6 +53,8 @@ const SPACE_DEFAULTS: Readonly<SpaceConfig> = {
   depth: 50,
   includeSpacers: false,
   spacerClearance: 1.0, // 1mm clearance per side (2mm total less than margin)
+  gridAlignmentX: "center",
+  gridAlignmentY: "center",
 };
 
 export function createDefaultSpaceConfig(): SpaceConfig {
@@ -86,16 +103,29 @@ export function getGridFit(space: SpaceConfig, gridConfig: GridConfig): GridFit 
 
   const maxHeightUnits = Math.floor(space.depth / gridConfig.heightUnit);
 
-  // Spacer dimensions: margin per side minus clearance on each face
-  const marginPerSideX = remainderWidth / 2;
-  const marginPerSideY = remainderLength / 2;
-  const spacerWidthX = Math.max(
-    0,
-    marginPerSideX - space.spacerClearance
+  // Compute grid offset based on alignment. Offset is distance from the
+  // space's start edge to the grid's start edge.
+  const gridOffsetX = computeGridOffset(
+    space.gridAlignmentX,
+    remainderWidth
   );
-  const spacerWidthY = Math.max(
-    0,
-    marginPerSideY - space.spacerClearance
+  const gridOffsetY = computeGridOffset(
+    space.gridAlignmentY,
+    remainderLength
+  );
+
+  // Compute spacer info per axis based on alignment and clearance.
+  const spacerX = computeSpacerInfo(
+    space.gridAlignmentX,
+    remainderWidth,
+    space.spacerClearance,
+    space.includeSpacers
+  );
+  const spacerY = computeSpacerInfo(
+    space.gridAlignmentY,
+    remainderLength,
+    space.spacerClearance,
+    space.includeSpacers
   );
 
   return {
@@ -107,9 +137,39 @@ export function getGridFit(space: SpaceConfig, gridConfig: GridConfig): GridFit 
     remainderLength,
     coveragePercent,
     maxHeightUnits,
-    spacerWidthX: space.includeSpacers ? spacerWidthX : 0,
-    spacerWidthY: space.includeSpacers ? spacerWidthY : 0,
+    gridOffsetX,
+    gridOffsetY,
+    spacerX,
+    spacerY,
   };
+}
+
+function computeGridOffset(
+  alignment: GridAlignment,
+  remainder: number
+): number {
+  if (remainder <= 0) return 0;
+  if (alignment === "start") return 0;
+  if (alignment === "end") return remainder;
+  return remainder / 2;
+}
+
+function computeSpacerInfo(
+  alignment: GridAlignment,
+  remainder: number,
+  clearance: number,
+  enabled: boolean
+): SpacerInfo {
+  if (!enabled || remainder <= 0) return { width: 0, count: 0 };
+  if (alignment === "center") {
+    // Two gaps of remainder/2 each. Each spacer thickness = gap - clearance.
+    const per = remainder / 2;
+    if (per <= clearance) return { width: 0, count: 0 };
+    return { width: per - clearance, count: 2 };
+  }
+  // Single gap of full remainder on the opposite side.
+  if (remainder <= clearance) return { width: 0, count: 0 };
+  return { width: remainder - clearance, count: 1 };
 }
 
 // ── Optimal Base Unit Suggestion ─────────────────────────────────────────────
@@ -117,6 +177,49 @@ export function getGridFit(space: SpaceConfig, gridConfig: GridConfig): GridFit 
 const MIN_BASE_UNIT = 35;
 const MAX_BASE_UNIT = 55;
 const SEARCH_STEP = 0.5;
+
+/**
+ * Returns up to N diverse base unit suggestions, each with a different
+ * (unitsX, unitsY) combination. For each unique grid dimension combo, the
+ * best-fitting base unit is kept. Results are sorted by coverage (highest first).
+ */
+export function suggestTopBaseUnits(
+  space: SpaceConfig,
+  count = 3
+): BaseUnitSuggestion[] {
+  // Map from "ux,uy" key to the best (lowest waste) BaseUnitSuggestion for that combo
+  const byCombo = new Map<string, BaseUnitSuggestion>();
+
+  for (
+    let unit = MIN_BASE_UNIT;
+    unit <= MAX_BASE_UNIT;
+    unit += SEARCH_STEP
+  ) {
+    const ux = Math.floor(space.width / unit);
+    const uy = Math.floor(space.length / unit);
+    if (ux < 2 || uy < 2) continue;
+
+    const usable = ux * unit * uy * unit;
+    const total = space.width * space.length;
+    const waste = ((total - usable) / total) * 100;
+
+    const key = `${ux},${uy}`;
+    const existing = byCombo.get(key);
+    if (!existing || waste < existing.wastePercent) {
+      byCombo.set(key, {
+        baseUnit: unit,
+        wastePercent: waste,
+        unitsX: ux,
+        unitsY: uy,
+      });
+    }
+  }
+
+  // Sort by waste (ascending) and take the top N
+  return [...byCombo.values()]
+    .sort((a, b) => a.wastePercent - b.wastePercent)
+    .slice(0, count);
+}
 
 export function suggestOptimalBaseUnit(space: SpaceConfig): BaseUnitSuggestion {
   let bestUnit = 42;

@@ -15,6 +15,7 @@ import {
   redo as redoHistory,
   canUndo as canUndoHistory,
   canRedo as canRedoHistory,
+  DEFAULT_BIN_PROPERTIES,
 } from "../lib/layout";
 import { useSpaceConfig } from "./SpaceConfigContext";
 import { useToast } from "./ui/Toast";
@@ -83,6 +84,13 @@ export function LayoutProvider({
           item.gridY + item.gridUnitsY <= newY
       );
       const removed = prev.present.items.length - kept.length;
+      if (
+        removed === 0 &&
+        prev.present.gridUnitsX === newX &&
+        prev.present.gridUnitsY === newY
+      ) {
+        return prev;
+      }
       if (removed > 0) {
         // Toast is called inside a setState callback — schedule it
         queueMicrotask(() => {
@@ -173,9 +181,14 @@ export function LayoutProvider({
 
   const updateBinProperties = useCallback(
     (id: string, props: Partial<BinProperties>) => {
-      pushState(updateItemProperties(id, props, history.present));
+      // Use functional updater so rapid sequential calls (e.g. multi-select
+      // edits in a loop) all see each other's updates instead of the stale
+      // snapshot from the render when this callback was created.
+      setHistory((prev) =>
+        pushHistory(prev, updateItemProperties(id, props, prev.present))
+      );
     },
-    [pushState, history.present]
+    []
   );
 
   const clearLayout = useCallback(() => {
@@ -184,7 +197,16 @@ export function LayoutProvider({
   }, [pushState, history.present]);
 
   const importLayout = useCallback((state: LayoutState) => {
-    setHistory(createHistory(state));
+    // Backfill any missing bin properties so older saved projects work with
+    // newly added fields (e.g. dividerHeightUnits).
+    const migrated: LayoutState = {
+      ...state,
+      items: state.items.map((item) => ({
+        ...item,
+        binProperties: { ...DEFAULT_BIN_PROPERTIES, ...item.binProperties },
+      })),
+    };
+    setHistory(createHistory(migrated));
     setSelectedId(null);
   }, []);
 

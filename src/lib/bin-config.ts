@@ -29,8 +29,19 @@ export const LIP_LEDGE = 0.4; // horizontal ledge at very top of lip
 export const LIP_SUPPORT_MIN_HEIGHT = 1.2; // minimum vertical support below taper
 
 // ── Interior ────────────────────────────────────────────────────────────────
-export const INTERIOR_FILLET_RADIUS = 1.85; // floor-to-wall fillet
+export const INTERIOR_FILLET_RADIUS = 0.4; // small floor-to-wall chamfer for print strength
 export const BRIDGE_THICKNESS = 1.21; // floor connecting base pads to body cavity
+export const DIVIDER_THICKNESS = 1.2; // internal divider wall thickness
+
+// ── Scoop ───────────────────────────────────────────────────────────────────
+// The scoop is a curved cutout on the front (-Y) wall making it easier to
+// grab items. Modeled as a cylinder subtraction from the interior.
+export const SCOOP_RADIUS_RATIO = 0.8; // fraction of interior width used as scoop radius
+
+// ── Bottom Holes ────────────────────────────────────────────────────────────
+// Array of holes in the floor for drainage or weight reduction.
+export const BOTTOM_HOLE_DIAMETER = 5; // mm
+export const BOTTOM_HOLE_SPACING = 10; // mm center-to-center
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +53,11 @@ export interface BinConfig {
   includeStackingLip: boolean;
   includeMagnetHoles: boolean;
   includeScrewHoles: boolean;
+  dividersX: number;
+  dividersY: number;
+  dividerHeightUnits: number; // 0 = full cavity height
+  includeScoop: boolean;
+  includeBottomHoles: boolean;
 }
 
 export interface BinDimensions {
@@ -67,6 +83,11 @@ const BIN_DEFAULTS: Readonly<BinConfig> = {
   includeStackingLip: true,
   includeMagnetHoles: true,
   includeScrewHoles: false,
+  dividersX: 0,
+  dividersY: 0,
+  dividerHeightUnits: 0,
+  includeScoop: false,
+  includeBottomHoles: false,
 };
 
 export function createDefaultBinConfig(): BinConfig {
@@ -107,10 +128,8 @@ export function getBinDimensions(
   binConfig: BinConfig,
   gridConfig: GridConfig
 ): BinDimensions {
-  const exteriorWidth =
-    gridConfig.baseUnit * binConfig.gridUnitsX - gridConfig.tolerance;
-  const exteriorLength =
-    gridConfig.baseUnit * binConfig.gridUnitsY - gridConfig.tolerance;
+  const exteriorWidth = gridConfig.baseUnit * binConfig.gridUnitsX;
+  const exteriorLength = gridConfig.baseUnit * binConfig.gridUnitsY;
   const interiorWidth = exteriorWidth - 2 * binConfig.wallThickness;
   const interiorLength = exteriorLength - 2 * binConfig.wallThickness;
 
