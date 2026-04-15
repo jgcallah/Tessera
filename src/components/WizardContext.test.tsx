@@ -43,15 +43,15 @@ describe("WizardProvider", () => {
     expect(screen.getByText("child")).toBeInTheDocument();
   });
 
-  it("defaults to space-grid step", () => {
+  it("defaults to printer step", () => {
     render(
       <WizardProvider>
         <StepReader />
       </WizardProvider>
     );
-    expect(screen.getByTestId("step")).toHaveTextContent("space-grid");
+    expect(screen.getByTestId("step")).toHaveTextContent("printer");
     expect(screen.getByTestId("index")).toHaveTextContent("0");
-    expect(screen.getByTestId("total")).toHaveTextContent("5");
+    expect(screen.getByTestId("total")).toHaveTextContent("6");
   });
 
   it("accepts initial step", () => {
@@ -94,7 +94,7 @@ describe("wizard navigation", () => {
     act(() => {
       screen.getByTestId("next").click();
     });
-    expect(screen.getByTestId("step")).toHaveTextContent("layout");
+    expect(screen.getByTestId("step")).toHaveTextContent("space-grid");
   });
 
   it("goPrev goes to previous step", () => {
@@ -130,7 +130,7 @@ describe("wizard navigation", () => {
     act(() => {
       screen.getByTestId("prev").click();
     });
-    expect(screen.getByTestId("step")).toHaveTextContent("space-grid");
+    expect(screen.getByTestId("step")).toHaveTextContent("printer");
   });
 
   it("goToStep jumps to specific step", () => {

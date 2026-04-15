@@ -3,12 +3,13 @@ import { useWizard } from "./WizardContext";
 import { useProject } from "./ProjectContext";
 import { StepIndicator } from "./StepIndicator";
 import { ProjectPanel } from "./ProjectPanel";
+import { PrinterStep } from "./steps/PrinterStep";
 import { SpaceGridStep } from "./steps/SpaceGridStep";
 import { LayoutStep } from "./steps/LayoutStep";
 import { BinEditorStep } from "./steps/BinEditorStep";
 import { BaseplateEditorStep } from "./steps/BaseplateEditorStep";
 import { PrintExportStep } from "./steps/PrintExportStep";
-import { STEP_LABELS } from "../lib/wizard";
+import { STEP_LABELS, WIZARD_STEPS } from "../lib/wizard";
 
 interface WizardShellProps {
   onBackToStart?: () => void;
@@ -108,6 +109,7 @@ export function WizardShell({
 
       {/* Step Content */}
       <main className="min-h-0 w-full flex-1 p-6">
+        {currentStep === "printer" && <PrinterStep />}
         {currentStep === "space-grid" && <SpaceGridStep />}
         {currentStep === "layout" && <LayoutStep />}
         {currentStep === "bin-editor" && <BinEditorStep />}
@@ -128,7 +130,7 @@ export function WizardShell({
             Previous
           </button>
           <span className="text-xs text-zinc-500">
-            Step {currentIndex + 1} of {5} — {STEP_LABELS[currentStep]}
+            Step {currentIndex + 1} of {WIZARD_STEPS.length} — {STEP_LABELS[currentStep]}
           </span>
           <button
             type="button"

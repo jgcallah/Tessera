@@ -23,7 +23,7 @@ interface WizardProviderProps {
 
 export function WizardProvider({
   children,
-  initialStep = "space-grid",
+  initialStep = "printer",
 }: WizardProviderProps): React.JSX.Element {
   const [currentStep, setCurrentStep] = useState<WizardStep>(initialStep);
 

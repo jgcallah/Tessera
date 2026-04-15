@@ -78,6 +78,7 @@ describe("generatePrintPlanMarkdown", () => {
           {
             x: 0,
             y: 0,
+            rotated: false,
             item: {
               id: "bin-2x1",
               width: 83.5,
@@ -89,6 +90,7 @@ describe("generatePrintPlanMarkdown", () => {
           {
             x: 85.5,
             y: 0,
+            rotated: false,
             item: {
               id: "bin-2x1",
               width: 83.5,
@@ -105,6 +107,7 @@ describe("generatePrintPlanMarkdown", () => {
           {
             x: 0,
             y: 0,
+            rotated: false,
             item: {
               id: "bin-1x1",
               width: 41.5,

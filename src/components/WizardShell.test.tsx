@@ -5,7 +5,9 @@ import { GridConfigProvider } from "./GridConfigContext";
 import { SpaceConfigProvider } from "./SpaceConfigContext";
 import { BinConfigProvider } from "./BinConfigContext";
 import { BaseplateConfigProvider } from "./BaseplateConfigContext";
+import { PrinterConfigProvider } from "./PrinterConfigContext";
 import { LayoutProvider } from "./LayoutContext";
+import { BaseplateLayoutProvider } from "./BaseplateLayoutContext";
 import { PreviewProvider } from "./PreviewContext";
 import { ProjectProvider } from "./ProjectContext";
 import { WizardShell } from "./WizardShell";
@@ -28,13 +30,17 @@ function renderShell() {
         <SpaceConfigProvider>
           <BinConfigProvider>
             <BaseplateConfigProvider>
-              <LayoutProvider>
-                <PreviewProvider>
-                  <ProjectProvider projectName="Test Project">
-                    <WizardShell />
-                  </ProjectProvider>
-                </PreviewProvider>
-              </LayoutProvider>
+              <PrinterConfigProvider>
+                <LayoutProvider>
+                  <BaseplateLayoutProvider>
+                    <PreviewProvider>
+                      <ProjectProvider projectName="Test Project">
+                        <WizardShell />
+                      </ProjectProvider>
+                    </PreviewProvider>
+                  </BaseplateLayoutProvider>
+                </LayoutProvider>
+              </PrinterConfigProvider>
             </BaseplateConfigProvider>
           </BinConfigProvider>
         </SpaceConfigProvider>
@@ -49,15 +55,15 @@ describe("WizardShell", () => {
     expect(screen.getByText("Tessera")).toBeInTheDocument();
   });
 
-  it("shows step 1 content by default", () => {
+  it("shows step 1 (Printer) content by default", () => {
     renderShell();
-    expect(screen.getByText("Space Definition")).toBeInTheDocument();
-    expect(screen.getByText("Grid Configuration")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^printer$/i })).toBeInTheDocument();
   });
 
   it("does not show step 2 content by default", () => {
     renderShell();
     expect(screen.queryByText("Layout Planner")).not.toBeInTheDocument();
+    expect(screen.queryByText("Space Definition")).not.toBeInTheDocument();
   });
 
   it("Previous is disabled on step 1", () => {
@@ -70,37 +76,38 @@ describe("WizardShell", () => {
     expect(screen.getByTestId("next-btn")).not.toBeDisabled();
   });
 
-  it("clicking Next goes to step 2 (Layout)", () => {
+  it("clicking Next goes to step 2 (Space & Grid)", () => {
     renderShell();
     fireEvent.click(screen.getByTestId("next-btn"));
-    expect(screen.getByText("Layout Planner")).toBeInTheDocument();
-    expect(screen.queryByText("Space Definition")).not.toBeInTheDocument();
+    expect(screen.getByText("Space Definition")).toBeInTheDocument();
   });
 
   it("can navigate all the way through", () => {
     renderShell();
-    // Step 1 → 2 (Layout)
+    // Step 1 (Printer) → 2 (Space & Grid)
+    fireEvent.click(screen.getByTestId("next-btn"));
+    expect(screen.getByText("Space Definition")).toBeInTheDocument();
+    // Step 2 → 3 (Layout)
     fireEvent.click(screen.getByTestId("next-btn"));
     expect(screen.getByText("Layout Planner")).toBeInTheDocument();
-    // Step 2 → 3 (Bin Editor)
+    // Step 3 → 4 (Bin Editor)
     fireEvent.click(screen.getByTestId("next-btn"));
     expect(screen.getByRole("heading", { name: /bin editor/i })).toBeInTheDocument();
-    // Step 3 → 4 (Baseplate Editor)
+    // Step 4 → 5 (Baseplate Layout)
     fireEvent.click(screen.getByTestId("next-btn"));
-    expect(screen.getByRole("heading", { name: /baseplate editor/i })).toBeInTheDocument();
-    // Step 4 → 5 (Print & Export)
+    expect(screen.getByRole("heading", { name: /baseplate layout/i })).toBeInTheDocument();
+    // Step 5 → 6 (Print & Export)
     fireEvent.click(screen.getByTestId("next-btn"));
-    expect(screen.getByText("Print Planner")).toBeInTheDocument();
-    expect(screen.getByText("Export")).toBeInTheDocument();
+    expect(screen.getByText("Print Options")).toBeInTheDocument();
     // Next disabled on last step
     expect(screen.getByTestId("next-btn")).toBeDisabled();
   });
 
   it("Previous goes back", () => {
     renderShell();
-    fireEvent.click(screen.getByTestId("next-btn")); // → step 2
-    fireEvent.click(screen.getByTestId("prev-btn")); // → step 1
-    expect(screen.getByText("Space Definition")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("next-btn")); // → step 2 (Space)
+    fireEvent.click(screen.getByTestId("prev-btn")); // → step 1 (Printer)
+    expect(screen.getByRole("heading", { name: /^printer$/i })).toBeInTheDocument();
   });
 
   it("shows save/load buttons", () => {

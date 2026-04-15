@@ -3,7 +3,9 @@ import { GridConfigProvider } from "./GridConfigContext";
 import { SpaceConfigProvider } from "./SpaceConfigContext";
 import { BinConfigProvider } from "./BinConfigContext";
 import { BaseplateConfigProvider } from "./BaseplateConfigContext";
+import { PrinterConfigProvider } from "./PrinterConfigContext";
 import { LayoutProvider } from "./LayoutContext";
+import { BaseplateLayoutProvider } from "./BaseplateLayoutContext";
 import { PreviewProvider } from "./PreviewContext";
 import { WizardProvider } from "./WizardContext";
 import { ProjectProvider } from "./ProjectContext";
@@ -67,21 +69,29 @@ export function App(): React.JSX.Element {
                     ? { initialConfig: activeProject.data.baseplateConfig }
                     : {})}
                 >
-                  <LayoutProvider>
-                    <PreviewProvider>
-                      <ProjectProvider
-                        projectName={activeProject.name}
-                        {...(activeProject.id
-                          ? { projectId: activeProject.id }
-                          : {})}
-                        {...(activeProject.data
-                          ? { initialData: activeProject.data }
-                          : {})}
-                      >
-                        <WizardShell onBackToStart={handleBackToStart} />
-                      </ProjectProvider>
-                    </PreviewProvider>
-                  </LayoutProvider>
+                  <PrinterConfigProvider
+                    {...(activeProject.data?.printBed
+                      ? { initialConfig: activeProject.data.printBed }
+                      : {})}
+                  >
+                    <LayoutProvider>
+                      <BaseplateLayoutProvider>
+                      <PreviewProvider>
+                        <ProjectProvider
+                          projectName={activeProject.name}
+                          {...(activeProject.id
+                            ? { projectId: activeProject.id }
+                            : {})}
+                          {...(activeProject.data
+                            ? { initialData: activeProject.data }
+                            : {})}
+                        >
+                          <WizardShell onBackToStart={handleBackToStart} />
+                        </ProjectProvider>
+                      </PreviewProvider>
+                      </BaseplateLayoutProvider>
+                    </LayoutProvider>
+                  </PrinterConfigProvider>
                 </BaseplateConfigProvider>
               </BinConfigProvider>
             </SpaceConfigProvider>

@@ -28,8 +28,9 @@ function renderIndicator() {
 }
 
 describe("StepIndicator", () => {
-  it("renders 5 step buttons", () => {
+  it("renders all 6 step buttons", () => {
     renderIndicator();
+    expect(screen.getByText(/^printer$/i)).toBeInTheDocument();
     expect(screen.getByText(/space & grid/i)).toBeInTheDocument();
     expect(screen.getByText(/^layout$/i)).toBeInTheDocument();
     expect(screen.getByText(/bin editor/i)).toBeInTheDocument();
@@ -37,9 +38,9 @@ describe("StepIndicator", () => {
     expect(screen.getByText(/print & export/i)).toBeInTheDocument();
   });
 
-  it("marks first step as current", () => {
+  it("marks first step (Printer) as current", () => {
     renderIndicator();
-    const btn = screen.getByText(/space & grid/i).closest("button")!;
+    const btn = screen.getByText(/^printer$/i).closest("button")!;
     expect(btn).toHaveAttribute("aria-current", "step");
   });
 
@@ -53,14 +54,14 @@ describe("StepIndicator", () => {
   it("shows step numbers in circles", () => {
     renderIndicator();
     expect(screen.getByText("1")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText("6")).toBeInTheDocument();
   });
 
   it("shows connector lines between steps", () => {
     renderIndicator();
-    // 5 steps = 4 connectors (rendered as divs)
+    // 6 steps = 5 connectors (rendered as divs)
     const nav = screen.getByRole("navigation");
     const connectors = nav.querySelectorAll("div");
-    expect(connectors.length).toBeGreaterThanOrEqual(4);
+    expect(connectors.length).toBeGreaterThanOrEqual(5);
   });
 });

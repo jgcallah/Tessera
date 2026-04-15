@@ -27,11 +27,12 @@ describe("App — start screen", () => {
 });
 
 describe("App — new project flow", () => {
-  it("clicking New Project enters the wizard", () => {
+  it("clicking New Project enters the wizard on the Printer step", () => {
     render(<App />);
     fireEvent.click(screen.getByTestId("new-project"));
-    expect(screen.getByText("Space Definition")).toBeInTheDocument();
-    expect(screen.getByText("Grid Configuration")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^printer$/i })
+    ).toBeInTheDocument();
   });
 
   it("can navigate back to start screen", () => {
@@ -43,17 +44,19 @@ describe("App — new project flow", () => {
 });
 
 describe("App — wizard navigation", () => {
-  it("navigates through all 5 steps", () => {
+  it("navigates through all 6 steps", () => {
     render(<App />);
     fireEvent.click(screen.getByTestId("new-project"));
+    expect(screen.getByRole("heading", { name: /^printer$/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("next-btn"));
     expect(screen.getByText("Space Definition")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("next-btn"));
     expect(screen.getByText("Layout Planner")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("next-btn"));
     expect(screen.getByRole("heading", { name: /bin editor/i })).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("next-btn"));
-    expect(screen.getByRole("heading", { name: /baseplate editor/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /baseplate layout/i })).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("next-btn"));
-    expect(screen.getByText("Print Planner")).toBeInTheDocument();
+    expect(screen.getByText("Print Options")).toBeInTheDocument();
   });
 });
