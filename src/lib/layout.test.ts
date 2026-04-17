@@ -42,6 +42,16 @@ describe("createLayoutItem", () => {
     const b = createLayoutItem(1, 0, 1, 1);
     expect(a.id).not.toBe(b.id);
   });
+
+  it("generates 100 unique, correctly-prefixed IDs", () => {
+    const ids = Array.from({ length: 100 }, () =>
+      createLayoutItem(0, 0, 1, 1).id
+    );
+    expect(new Set(ids).size).toBe(100);
+    for (const id of ids) {
+      expect(id.startsWith("item-")).toBe(true);
+    }
+  });
 });
 
 // ── Overlap Detection ────────────────────────────────────────────────────────

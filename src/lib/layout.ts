@@ -49,8 +49,6 @@ export interface PartEntry {
 
 // ── Item Creation ────────────────────────────────────────────────────────────
 
-let nextId = 1;
-
 export function createLayoutItem(
   gridX: number,
   gridY: number,
@@ -58,7 +56,7 @@ export function createLayoutItem(
   gridUnitsY: number
 ): LayoutItem {
   return {
-    id: `item-${nextId++}`,
+    id: `item-${crypto.randomUUID()}`,
     gridX,
     gridY,
     gridUnitsX,

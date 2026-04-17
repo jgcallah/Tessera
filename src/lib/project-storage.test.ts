@@ -45,6 +45,34 @@ describe("saveProject", () => {
     const loaded = loadProject(id);
     expect(loaded?.data.spaceConfig.width).toBe(999);
   });
+
+  it("records baseplate and spacer counts in the summary", () => {
+    const data = createTestProjectData();
+    data.baseplateLayout = {
+      items: [
+        { id: "bp-a", gridX: 0, gridY: 0, gridUnitsX: 2, gridUnitsY: 2 },
+        { id: "bp-b", gridX: 2, gridY: 0, gridUnitsX: 2, gridUnitsY: 2 },
+      ],
+      spacers: [
+        { id: "sp-a", side: "right", offset: 0, length: 1 },
+        { id: "sp-b", side: "right", offset: 1, length: 1 },
+        { id: "sp-c", side: "right", offset: 2, length: 1 },
+      ],
+      gridUnitsX: 9,
+      gridUnitsY: 7,
+    };
+    saveProject("WithBaseplates", data);
+    const entry = listProjects()[0]!;
+    expect(entry.baseplateCount).toBe(2);
+    expect(entry.spacerCount).toBe(3);
+  });
+
+  it("records zero baseplate/spacer counts when baseplateLayout is absent", () => {
+    saveProject("PlainProject", createTestProjectData());
+    const entry = listProjects()[0]!;
+    expect(entry.baseplateCount).toBe(0);
+    expect(entry.spacerCount).toBe(0);
+  });
 });
 
 describe("loadProject", () => {

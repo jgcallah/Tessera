@@ -45,9 +45,6 @@ export interface SpacerPartEntry {
 
 // ── Factories ────────────────────────────────────────────────────────────────
 
-let nextItemId = 1;
-let nextSpacerId = 1;
-
 export function createBaseplateItem(
   gridX: number,
   gridY: number,
@@ -55,7 +52,7 @@ export function createBaseplateItem(
   gridUnitsY: number
 ): BaseplateItem {
   return {
-    id: `bp-${nextItemId++}`,
+    id: `bp-${crypto.randomUUID()}`,
     gridX,
     gridY,
     gridUnitsX,
@@ -69,7 +66,7 @@ export function createSpacerPiece(
   length: number
 ): SpacerPiece {
   return {
-    id: `sp-${nextSpacerId++}`,
+    id: `sp-${crypto.randomUUID()}`,
     side,
     offset,
     length,

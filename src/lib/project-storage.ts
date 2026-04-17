@@ -8,6 +8,8 @@ export interface ProjectSummary {
   savedAt: string; // ISO date string
   createdAt?: string;
   binCount?: number;
+  baseplateCount?: number;
+  spacerCount?: number;
   spaceWidth?: number;
   spaceLength?: number;
 }
@@ -63,6 +65,8 @@ export function saveProject(
     savedAt: now,
     createdAt: existingEntry?.createdAt ?? now,
     binCount: data.layout?.items?.length ?? 0,
+    baseplateCount: data.baseplateLayout?.items?.length ?? 0,
+    spacerCount: data.baseplateLayout?.spacers?.length ?? 0,
     spaceWidth: data.spaceConfig?.width,
     spaceLength: data.spaceConfig?.length,
   };

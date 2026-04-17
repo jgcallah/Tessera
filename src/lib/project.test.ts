@@ -115,4 +115,71 @@ describe("validateProjectData", () => {
     data.gridConfig = { mode: "gridfinity" }; // missing baseUnit
     expect(validateProjectData(data)).toBe(false);
   });
+
+  it("rejects projects with invalid per-config values", () => {
+    const data = JSON.parse(serializeProject(createTestProject()));
+    data.binConfig.gridUnitsX = -1;
+    expect(validateProjectData(data)).toBe(false);
+  });
+
+  it("rejects baseplateLayout of the wrong shape", () => {
+    const data = JSON.parse(serializeProject(createTestProject()));
+    data.baseplateLayout = "garbage";
+    expect(validateProjectData(data)).toBe(false);
+  });
+
+  it("rejects baseplateLayout with non-array items", () => {
+    const data = JSON.parse(serializeProject(createTestProject()));
+    data.baseplateLayout = {
+      items: "not an array",
+      spacers: [],
+      gridUnitsX: 9,
+      gridUnitsY: 7,
+    };
+    expect(validateProjectData(data)).toBe(false);
+  });
+
+  it("rejects baseplateLayout with malformed item", () => {
+    const data = JSON.parse(serializeProject(createTestProject()));
+    data.baseplateLayout.items = [{ id: "bp-x" }]; // missing grid coords
+    expect(validateProjectData(data)).toBe(false);
+  });
+
+  it("rejects spacer with invalid side", () => {
+    const data = JSON.parse(serializeProject(createTestProject()));
+    data.baseplateLayout.spacers = [
+      { id: "sp-1", side: "diagonal", offset: 0, length: 1 },
+    ];
+    expect(validateProjectData(data)).toBe(false);
+  });
+
+  it("accepts projects without baseplateLayout (pre-baseplate-save files)", () => {
+    const data = JSON.parse(serializeProject(createTestProject()));
+    delete data.baseplateLayout;
+    expect(validateProjectData(data)).toBe(true);
+  });
+
+  it("accepts projects without printBed", () => {
+    const data = JSON.parse(serializeProject(createTestProject()));
+    delete data.printBed;
+    expect(validateProjectData(data)).toBe(true);
+  });
+});
+
+describe("deserializeProject error messages", () => {
+  it("names the failing section in the error", () => {
+    const data = JSON.parse(serializeProject(createTestProject()));
+    data.binConfig.gridUnitsX = -1;
+    expect(() => deserializeProject(JSON.stringify(data))).toThrow(
+      /binConfig/
+    );
+  });
+
+  it("names baseplateLayout when its shape is wrong", () => {
+    const data = JSON.parse(serializeProject(createTestProject()));
+    data.baseplateLayout = "garbage";
+    expect(() => deserializeProject(JSON.stringify(data))).toThrow(
+      /baseplateLayout/
+    );
+  });
 });
