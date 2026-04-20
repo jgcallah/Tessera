@@ -178,7 +178,7 @@ describe("generateBinMesh — config variations", () => {
     const bin = await generateBinMesh(createDefaultBinConfig(), customGrid);
     const bbox = bin.boundingBox();
     const meshWidth = bbox.max[0] - bbox.min[0];
-    expect(meshWidth).toBeCloseTo(50, 0); // 50 * 1
+    expect(meshWidth).toBeCloseTo(49.5, 1); // 50 − 0.5 base gap
     bin.delete();
   });
 });

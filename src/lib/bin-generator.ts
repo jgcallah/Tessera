@@ -20,6 +20,7 @@ import {
   SCOOP_RADIUS_RATIO,
   BOTTOM_HOLE_DIAMETER,
   BOTTOM_HOLE_SPACING,
+  GRIDFINITY_BASE_GAP,
 } from "./bin-config";
 import { getGridDerivedValues } from "./grid-config";
 import { getManifold } from "./manifold";
@@ -53,7 +54,10 @@ export async function generateBinMesh(
 
   try {
     const cellSize = gridConfig.baseUnit;
-    const padSize = cellSize;
+    // Per spec: each base top is 41.5 mm (cellSize − GRIDFINITY_BASE_GAP),
+    // centered in its 42 mm cell. Leaves 0.25 mm tolerance per side for the
+    // baseplate socket.
+    const padSize = cellSize - GRIDFINITY_BASE_GAP;
 
     // ── Outer cross-section (full bin exterior) ─────────────────────────────
     const outerPts = roundedRectPoints(

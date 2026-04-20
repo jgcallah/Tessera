@@ -7,6 +7,10 @@ export const GRIDFINITY_BASE_HEIGHT = 4.75;
 export const GRIDFINITY_LIP_HEIGHT = 4.4;
 export const GRIDFINITY_CORNER_RADIUS = 3.75;
 export const GRIDFINITY_MAGNET_HOLE_INSET = 8;
+// Tolerance gap between adjacent base tops / between base and baseplate.
+// Per spec: each base top is 41.5mm within a 42mm cell, leaving 0.25mm per side
+// (0.5mm total) clearance. Applied once across the whole multi-unit bin.
+export const GRIDFINITY_BASE_GAP = 0.5;
 
 // ── Bin Base Profile (chamfered bottom that mates with baseplate socket) ─────
 // 3 segments from bottom to top, all chamfers at 45°
@@ -30,7 +34,9 @@ export const LIP_SUPPORT_MIN_HEIGHT = 1.2; // minimum vertical support below tap
 
 // ── Interior ────────────────────────────────────────────────────────────────
 export const INTERIOR_FILLET_RADIUS = 0.4; // small floor-to-wall chamfer for print strength
-export const BRIDGE_THICKNESS = 1.21; // floor connecting base pads to body cavity
+// Bridge (solid slab between base top and body cavity). Per spec:
+// BASE_HEIGHT (7) − BASE_PROFILE_HEIGHT (4.75) = 2.25 mm
+export const BRIDGE_THICKNESS = 2.25;
 export const DIVIDER_THICKNESS = 1.2; // internal divider wall thickness
 
 // ── Scoop ───────────────────────────────────────────────────────────────────
@@ -81,7 +87,7 @@ const BIN_DEFAULTS: Readonly<BinConfig> = {
   heightUnits: 3,
   wallThickness: 1.2,
   includeStackingLip: true,
-  includeMagnetHoles: true,
+  includeMagnetHoles: false,
   includeScrewHoles: false,
   dividersX: 0,
   dividersY: 0,
@@ -128,8 +134,11 @@ export function getBinDimensions(
   binConfig: BinConfig,
   gridConfig: GridConfig
 ): BinDimensions {
-  const exteriorWidth = gridConfig.baseUnit * binConfig.gridUnitsX;
-  const exteriorLength = gridConfig.baseUnit * binConfig.gridUnitsY;
+  // Per spec: total bin footprint is N·cell − 0.5mm (one shared gap for the
+  // whole bin, not N gaps). Each individual base top is 41.5mm within a 42mm
+  // cell, but the body above unifies into one rounded-rect N·cell−0.5 wide.
+  const exteriorWidth = gridConfig.baseUnit * binConfig.gridUnitsX - GRIDFINITY_BASE_GAP;
+  const exteriorLength = gridConfig.baseUnit * binConfig.gridUnitsY - GRIDFINITY_BASE_GAP;
   const interiorWidth = exteriorWidth - 2 * binConfig.wallThickness;
   const interiorLength = exteriorLength - 2 * binConfig.wallThickness;
 

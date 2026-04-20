@@ -37,14 +37,14 @@ describe("BinConfigPanel — basic render", () => {
   it("shows toggles for features", () => {
     renderPanel();
     expect(screen.getByLabelText(/stacking lip/i)).toBeChecked();
-    expect(screen.getByLabelText(/magnet holes/i)).toBeChecked();
+    expect(screen.getByLabelText(/magnet holes/i)).not.toBeChecked();
     expect(screen.getByLabelText(/screw holes/i)).not.toBeChecked();
   });
 
   it("shows calculated exterior dimensions", () => {
     renderPanel();
-    expect(screen.getByTestId("ext-width")).toHaveTextContent("42");
-    expect(screen.getByTestId("ext-length")).toHaveTextContent("42");
+    expect(screen.getByTestId("ext-width")).toHaveTextContent("41.5");
+    expect(screen.getByTestId("ext-length")).toHaveTextContent("41.5");
   });
 
   it("shows calculated total height", () => {
@@ -105,7 +105,7 @@ describe("BinConfigPanel — interactions", () => {
     fireEvent.change(screen.getByLabelText(/grid units x/i), {
       target: { value: "2" },
     });
-    // exteriorWidth = baseUnit * gridUnitsX = 42 * 2 = 84
-    expect(screen.getByTestId("ext-width")).toHaveTextContent("84");
+    // exteriorWidth = baseUnit * gridUnitsX − BASE_GAP = 2·42 − 0.5 = 83.5
+    expect(screen.getByTestId("ext-width")).toHaveTextContent("83.5");
   });
 });

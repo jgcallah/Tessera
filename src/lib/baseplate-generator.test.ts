@@ -129,9 +129,10 @@ describe("generateBaseplateMesh — config variations", () => {
       createBaseplateConfig({ gridUnitsX: 2, gridUnitsY: 2 }),
       gridConfig
     );
-    // 2x2 should have roughly 4x the volume of 1x1
+    // Frame construction: 2x2 has ~3x the rim/divider material of 1x1
+    // (outer perimeter scales ~2x plus internal dividers), not 4x.
     const ratio = bp2.volume() / bp1.volume();
-    expect(ratio).toBeGreaterThan(3.5);
+    expect(ratio).toBeGreaterThan(2.5);
     expect(ratio).toBeLessThan(4.5);
     bp1.delete();
     bp2.delete();

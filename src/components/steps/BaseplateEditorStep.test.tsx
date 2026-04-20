@@ -46,7 +46,7 @@ describe("BaseplateEditorStep", () => {
 
   it("shows feature checkboxes", () => {
     renderStep();
-    expect(screen.getByLabelText(/magnet holes/i)).toBeChecked();
+    expect(screen.getByLabelText(/magnet holes/i)).not.toBeChecked();
     expect(screen.getByLabelText(/snap-in connectors/i)).not.toBeChecked();
   });
 

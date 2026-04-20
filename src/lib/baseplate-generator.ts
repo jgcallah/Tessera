@@ -7,6 +7,7 @@ import {
   SOCKET_CHAMFER_TOP,
   SOCKET_TOTAL_DEPTH,
   SOCKET_LEDGE,
+  SOCKET_CORNER_RADIUS,
 } from "./baseplate-config";
 import { getGridDerivedValues } from "./grid-config";
 import { getManifold } from "./manifold";
@@ -43,43 +44,11 @@ export async function generateBaseplateMesh(
     const cellSize = gridConfig.baseUnit;
     const halfW = dims.width / 2;
     const halfL = dims.length / 2;
-    const wallParts: Manifold[] = [];
 
-    // Build the frame: outer rim + internal grid walls
-    // Each wall is a rectangular extrusion at the cell boundaries
-
-    // Horizontal walls (along X axis) at each Y boundary
-    for (let iy = 0; iy <= config.gridUnitsY; iy++) {
-      const y = iy * cellSize - halfL;
-      const wallLength = dims.width;
-      let wall = wasm.Manifold.cube(
-        [wallLength, dims.rimWidth, dims.totalHeight],
-        false
-      );
-      intermediates.push(wall);
-      wall = wall.translate(-halfW, y - dims.rimWidth / 2, 0);
-      intermediates.push(wall);
-      wallParts.push(wall);
-    }
-
-    // Vertical walls (along Y axis) at each X boundary
-    for (let ix = 0; ix <= config.gridUnitsX; ix++) {
-      const x = ix * cellSize - halfW;
-      const wallLength = dims.length;
-      let wall = wasm.Manifold.cube(
-        [dims.rimWidth, wallLength, dims.totalHeight],
-        false
-      );
-      intermediates.push(wall);
-      wall = wall.translate(x - dims.rimWidth / 2, -halfL, 0);
-      intermediates.push(wall);
-      wallParts.push(wall);
-    }
-
-    let plate = wasm.Manifold.union(wallParts);
-    intermediates.push(plate);
-
-    // Clip to the rounded outer boundary
+    // Outer rim frame: rounded outer rect minus rounded inner rect. The inner
+    // rect's corner radius = outer radius − rim width, which preserves a
+    // uniform-width ring with rounded inner corners at the plate corners
+    // (matching the real-world Gridfinity baseplate profile).
     const outerPts = roundedRectPoints(
       dims.width,
       dims.length,
@@ -88,12 +57,59 @@ export async function generateBaseplateMesh(
     );
     const outerCS = new wasm.CrossSection([outerPts]);
     intermediates.push(outerCS);
-    const outerBound = outerCS.extrude(dims.totalHeight + EXTRUDE_CLEARANCE);
-    intermediates.push(outerBound);
 
-    const clipped = plate.intersect(outerBound);
-    intermediates.push(clipped);
-    plate = clipped;
+    const innerRimCornerR = Math.max(0, dims.cornerRadius - dims.rimWidth);
+    const innerRimPts = roundedRectPoints(
+      dims.width - 2 * dims.rimWidth,
+      dims.length - 2 * dims.rimWidth,
+      innerRimCornerR,
+      ROUNDRECT_SEGMENTS
+    );
+    const innerRimCS = new wasm.CrossSection([innerRimPts]);
+    intermediates.push(innerRimCS);
+
+    const rimCS = outerCS.subtract(innerRimCS);
+    intermediates.push(rimCS);
+    let plate = rimCS.extrude(dims.totalHeight);
+    intermediates.push(plate);
+
+    // Internal divider walls (straight cuboids at each interior cell boundary).
+    // They span only the inner area so their endpoints meet the rim's inner
+    // edge at a T-junction with a right-angled inside corner (matches reference).
+    const dividers: Manifold[] = [];
+    const innerW = dims.width - 2 * dims.rimWidth;
+    const innerL = dims.length - 2 * dims.rimWidth;
+
+    for (let ix = 1; ix < config.gridUnitsX; ix++) {
+      const x = ix * cellSize - halfW;
+      let wall = wasm.Manifold.cube(
+        [dims.rimWidth, innerL, dims.totalHeight],
+        false
+      );
+      intermediates.push(wall);
+      wall = wall.translate(x - dims.rimWidth / 2, -innerL / 2, 0);
+      intermediates.push(wall);
+      dividers.push(wall);
+    }
+    for (let iy = 1; iy < config.gridUnitsY; iy++) {
+      const y = iy * cellSize - halfL;
+      let wall = wasm.Manifold.cube(
+        [innerW, dims.rimWidth, dims.totalHeight],
+        false
+      );
+      intermediates.push(wall);
+      wall = wall.translate(-innerW / 2, y - dims.rimWidth / 2, 0);
+      intermediates.push(wall);
+      dividers.push(wall);
+    }
+
+    if (dividers.length > 0) {
+      const dividersUnion = wasm.Manifold.union(dividers);
+      intermediates.push(dividersUnion);
+      const withDividers = wasm.Manifold.union([plate, dividersUnion]);
+      intermediates.push(withDividers);
+      plate = withDividers;
+    }
 
     // ── Socket profiles (chamfered cavity in top of each cell) ──────────
     plate = carveSocketProfiles(
@@ -168,12 +184,16 @@ function carveSocketProfiles(
   const halfW = dims.width / 2;
   const halfL = dims.length / 2;
 
-  // Socket opening size per cell (with ledge around edge)
+  // Socket opening size per cell (with ledge around edge). The socket's
+  // corner radius is `BASEPLATE_CORNER_RADIUS − SOCKET_LEDGE`, so at cells
+  // on the plate's outer corners the socket corner ends up concentric with
+  // the plate's outer rounded corner — yielding a uniform ledge-wide ring.
   const socketWidth = cellSize - 2 * SOCKET_LEDGE;
+
   const socketPts = roundedRectPoints(
     socketWidth,
     socketWidth,
-    dims.cornerRadius,
+    SOCKET_CORNER_RADIUS,
     ROUNDRECT_SEGMENTS
   );
   const socketCS = new wasm.CrossSection([socketPts]);
@@ -185,11 +205,9 @@ function carveSocketProfiles(
     { height: SOCKET_CHAMFER_TOP, startInset: SOCKET_TOTAL_DEPTH - SOCKET_CHAMFER_BOTTOM, endInset: 0 },
   ];
 
-  // Socket Z starts from (totalHeight - socketTotalDepth) up to totalHeight
   const socketTotalHeight = SOCKET_CHAMFER_BOTTOM + SOCKET_VERTICAL + SOCKET_CHAMFER_TOP;
   const socketBaseZ = dims.totalHeight - socketTotalHeight;
 
-  // Build one socket template
   const socketTemplate = buildChamferedProfile(
     wasm,
     socketCS,
@@ -198,7 +216,6 @@ function carveSocketProfiles(
     intermediates
   );
 
-  // Create translated copies for each cell and union them
   const sockets: Manifold[] = [];
   for (let ix = 0; ix < config.gridUnitsX; ix++) {
     for (let iy = 0; iy < config.gridUnitsY; iy++) {

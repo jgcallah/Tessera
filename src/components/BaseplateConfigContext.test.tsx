@@ -64,7 +64,7 @@ describe("BaseplateConfigProvider", () => {
       </Wrapper>
     );
     expect(screen.getByTestId("gridUnitsX")).toHaveTextContent("1");
-    expect(screen.getByTestId("magnets")).toHaveTextContent("true");
+    expect(screen.getByTestId("magnets")).toHaveTextContent("false");
   });
 
   it("provides dimensions from grid config", () => {

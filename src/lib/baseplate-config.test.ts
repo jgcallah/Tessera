@@ -16,7 +16,7 @@ describe("createDefaultBaseplateConfig", () => {
     expect(config).toEqual({
       gridUnitsX: 1,
       gridUnitsY: 1,
-      includeMagnetHoles: true,
+      includeMagnetHoles: false,
       includeScrewHoles: false,
       style: "standard",
       includeSnapConnectors: false,
@@ -125,12 +125,12 @@ describe("getBaseplateDimensions", () => {
     expect(dims.length).toBeCloseTo(168, 1); // 42 * 4
   });
 
-  it("computes total height as 4.65mm", () => {
+  it("computes total height as 4.25mm", () => {
     const dims = getBaseplateDimensions(
       createDefaultBaseplateConfig(),
       defaultGrid
     );
-    expect(dims.totalHeight).toBeCloseTo(4.65, 2);
+    expect(dims.totalHeight).toBeCloseTo(4.25, 2);
   });
 
   it("computes standard rimWidth as 2.4mm", () => {

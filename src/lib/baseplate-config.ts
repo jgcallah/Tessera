@@ -3,18 +3,25 @@ import { isPositiveInteger } from "./validation-utils";
 
 // ── Gridfinity Baseplate Constants ───────────────────────────────────────────
 
-export const BASEPLATE_TOTAL_HEIGHT = 4.65;
+// Matches real-world Gridfinity baseplate STLs (e.g. Gridfinity-SimpleBase):
+// plate is 4.25 mm tall and the receptacle profile (0.7 + 1.8 + 1.75 = 4.25)
+// occupies the full height — no solid floor.
+export const BASEPLATE_TOTAL_HEIGHT = 4.25;
 export const BASEPLATE_RIM_WIDTH = 2.4; // width of the rim/grid walls
-export const BASEPLATE_CORNER_RADIUS = 4.0;
-export const BASEPLATE_SKELETON_RIM_WIDTH = 1.2; // thinner walls for skeleton
+export const BASEPLATE_CORNER_RADIUS = 4.0; // outer rounded corner radius
+export const BASEPLATE_SKELETON_RIM_WIDTH = 1.2; // thinner walls for skeleton style
 
-// ── Baseplate Socket Profile (female inverse of bin base, per cell) ─────────
-// 3 segments from bottom to top, all chamfers at 45°
+// ── Baseplate Socket Profile (female inverse of bin base) ───────────────────
+// Profile: [0,0] → [0.7, 0.7] → [0.7, 2.5] → [2.45, 4.25]
 export const SOCKET_CHAMFER_BOTTOM = 0.7; // bottom 45° segment
 export const SOCKET_VERTICAL = 1.8; // middle vertical segment
 export const SOCKET_CHAMFER_TOP = 1.75; // top 45° segment
 export const SOCKET_TOTAL_DEPTH = 2.45; // 0.7 + 1.75 — total horizontal depth
 export const SOCKET_LEDGE = 0.4; // horizontal ledge at top of socket
+// Socket rounded-corner radius. Set so that at plate-corner cells the socket
+// corner is concentric with the plate's outer rounded corner, giving a
+// uniform SOCKET_LEDGE-wide ring at the corner instead of a thin sliver.
+export const SOCKET_CORNER_RADIUS = BASEPLATE_CORNER_RADIUS - SOCKET_LEDGE; // 3.6
 
 export type BaseplateStyle = "standard" | "skeleton";
 
@@ -47,7 +54,7 @@ export interface BaseplateDimensions {
 const BASEPLATE_DEFAULTS: Readonly<BaseplateConfig> = {
   gridUnitsX: 1,
   gridUnitsY: 1,
-  includeMagnetHoles: true,
+  includeMagnetHoles: false,
   includeScrewHoles: false,
   style: "standard",
   includeSnapConnectors: false,

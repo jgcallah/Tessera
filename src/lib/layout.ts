@@ -17,7 +17,7 @@ export interface BinProperties {
 export const DEFAULT_BIN_PROPERTIES: Readonly<BinProperties> = {
   heightUnits: 3,
   includeStackingLip: true,
-  includeMagnetHoles: true,
+  includeMagnetHoles: false,
   includeScrewHoles: false,
   dividersX: 0,
   dividersY: 0,

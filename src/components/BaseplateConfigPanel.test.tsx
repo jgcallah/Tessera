@@ -32,14 +32,14 @@ describe("BaseplateConfigPanel — basic render", () => {
 
   it("shows feature toggles", () => {
     renderPanel();
-    expect(screen.getByLabelText(/magnet holes/i)).toBeChecked();
+    expect(screen.getByLabelText(/magnet holes/i)).not.toBeChecked();
     expect(screen.getByLabelText(/screw holes/i)).not.toBeChecked();
   });
 
   it("shows computed dimensions", () => {
     renderPanel();
     expect(screen.getByTestId("bp-width")).toHaveTextContent("42");
-    expect(screen.getByTestId("bp-height")).toHaveTextContent("4.65");
+    expect(screen.getByTestId("bp-height")).toHaveTextContent("4.25");
   });
 
   it("shows no validation errors for default config", () => {

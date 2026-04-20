@@ -19,7 +19,7 @@ describe("createDefaultBinConfig", () => {
       heightUnits: 3,
       wallThickness: 1.2,
       includeStackingLip: true,
-      includeMagnetHoles: true,
+      includeMagnetHoles: false,
       includeScrewHoles: false,
       dividersX: 0,
       dividersY: 0,
@@ -140,12 +140,12 @@ describe("getBinDimensions", () => {
 
   it("computes exteriorWidth for 1x1 bin", () => {
     const dims = getBinDimensions(createDefaultBinConfig(), defaultGrid);
-    expect(dims.exteriorWidth).toBeCloseTo(42, 1); // 42*1
+    expect(dims.exteriorWidth).toBeCloseTo(41.5, 1); // 42 − 0.5 gap
   });
 
   it("computes exteriorLength for 1x1 bin", () => {
     const dims = getBinDimensions(createDefaultBinConfig(), defaultGrid);
-    expect(dims.exteriorLength).toBeCloseTo(42, 1);
+    expect(dims.exteriorLength).toBeCloseTo(41.5, 1);
   });
 
   it("computes exteriorWidth for 2x1 bin", () => {
@@ -153,7 +153,7 @@ describe("getBinDimensions", () => {
       createBinConfig({ gridUnitsX: 2 }),
       defaultGrid
     );
-    expect(dims.exteriorWidth).toBeCloseTo(84, 1); // 42*2
+    expect(dims.exteriorWidth).toBeCloseTo(83.5, 1); // 2·42 − 0.5
   });
 
   it("computes exteriorLength for 1x3 bin", () => {
@@ -161,12 +161,12 @@ describe("getBinDimensions", () => {
       createBinConfig({ gridUnitsY: 3 }),
       defaultGrid
     );
-    expect(dims.exteriorLength).toBeCloseTo(126, 1); // 42*3
+    expect(dims.exteriorLength).toBeCloseTo(125.5, 1); // 3·42 − 0.5
   });
 
   it("computes interiorWidth as exterior minus 2*wallThickness", () => {
     const dims = getBinDimensions(createDefaultBinConfig(), defaultGrid);
-    expect(dims.interiorWidth).toBeCloseTo(39.6, 1); // 42 - 2*1.2
+    expect(dims.interiorWidth).toBeCloseTo(39.1, 1); // 41.5 − 2·1.2
   });
 
   it("computes baseHeight as 4.75mm", () => {
@@ -218,6 +218,6 @@ describe("getBinDimensions", () => {
       baseUnit: 50,
     });
     const dims = getBinDimensions(createDefaultBinConfig(), customGrid);
-    expect(dims.exteriorWidth).toBeCloseTo(50, 1); // 50 * 1
+    expect(dims.exteriorWidth).toBeCloseTo(49.5, 1); // 50 − 0.5 gap
   });
 });
